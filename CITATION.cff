@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use UltraFold, please cite it as below."
+title: "UltraFold: windowed RNA secondary-structure modeling from SHAPE/DMS data"
+version: "1.0.0"
+date-released: "2024-11-13"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/gsstephenson/UltraFold"
+
+authors:
+  - family-names: "Stephenson"
+    given-names: "George"
+    orcid: "https://orcid.org/0009-0005-3201-7450"
+
+# UltraFold is derived from SuperFold and bundles components from the Weeks Lab
+# (UNC-Chapel Hill). These upstream authors are credited per the GPLv3 license.
+references:
+  - type: software
+    title: "SuperFold"
+    authors:
+      - family-names: "Rice"
+        given-names: "Greggory M."
+      - family-names: "Mitchell III"
+        given-names: "David"
+        notes: "ShapeMapper 2.2 DMS compatibility (2023)."
+    notes: "Windowed folding approach UltraFold is derived from."
+    repository-code: "https://github.com/Weeks-UNC/Superfold"
+  - type: software
+    title: "Bundled Weeks Lab structure-drawing components (pvclient, arc ribbons)"
+    authors:
+      - family-names: "Busan"
+        given-names: "Steven"
+    notes: "Original author of pvclient.py (2014) and the arc-ribbon drawing code."
+  - type: software
+    title: "ShapeMapper 2"
+    notes: "Produces the SHAPE/DMS reactivity profiles used as input."
+    repository-code: "https://github.com/Weeks-UNC/shapemapper2"

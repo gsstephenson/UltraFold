@@ -1,0 +1,36 @@
+when i want to use eternafold, it says core dumped
+
+'Fold-smp {input.fasta} {output.ct} --dmsnt {input.dms} -MD {maxdistance}'
+input fasta, .dms (file with the position of the nucleotide and with the norm_profile)
+output .ct (describe arc https://rna.urmc.rochester.edu/Text/File_Formats.html#CT)
+
+'eternafold predict {input.bpp2seq} --evidence --numdatasources 1 --params /home/cfleur/.conda/envs/eternafold/lib/eternafold-lib/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 > {output.db}'
+input bpp2seq file (position of nucleotide, type of nucleotide, e1, norm_profile, ex: 1 G e2 7.070000e+00)  I have a script that takes the profile and make that file
+output .db (dot bracket file)      
+
+to go from a ct to .db, you can use ct2dot or the inverse is dot2ct command
+
+'partition-smp {input.fasta} {output.pfs} --dmsnt .dms -MD 600'
+same input as fold
+output is a .pfs that you convert into pairprob using the next command line
+'ProbabilityPlot -t {input.pfs} {output_pairprob.txt}'
+a pairprob file is first column position of nucleotide, second column is the position of the nucleotide it is paired to, third column is probability of pairing
+
+equivalent of partition is:
+'eternafold predict  --evidence {input.bpp2seq} --numdatasources 1 --params /home/cfleur/.conda/envs/eternafold/lib/eternafold-lib/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 --posteriors 0.00001 {output.bps}'
+the output has the same info as the pairprob but display differently. first column is the nucleotide. second column is all the pairing of that nucleotide display like nucleotide_x: probability, nucleotide_y:probability etc
+I have a script that convert .bps into pairprob
+
+
+Superfold is using fold and partition to make fold over very large rna:
+https://github.com/Weeks-UNC/Superfold/tree/master
+
+we use the --dms option
+so it would be : python Superfold.py -maxPairingDist 300 {input.map} --DMS
+
+eternafold doesn't have a max pairing distance but it would be nice. Maybe with the it can be managed with the window size of the superfold
+
+the input is .map which is the nucleotide #, Norm_profile, stderr, and Nucleotide sequence.
+
+that comes from the profile.txt https://github.com/Weeks-UNC/shapemapper2/blob/master/docs/file_formats.md
+
