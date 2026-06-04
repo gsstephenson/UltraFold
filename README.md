@@ -76,6 +76,71 @@ See [docs/external_tools.md](docs/external_tools.md) for details.
 
 ---
 
+## Running UltraFold (v1.0.0 environment)
+
+v1.0.0 is **Python 2.7** and has been verified to import and run under a
+Python 2.7 conda environment with the dependency versions below. Use this
+section to reproduce the exact environment.
+
+### Option A — on `dexter` (the original machine)
+
+A ready-made environment named **`py2-MaP`** already exists:
+
+```bash
+conda activate py2-MaP        # Python 2.7.18 + numpy/pandas/matplotlib/scipy
+cd src/ultrafold
+python Ultrafold.py <input.map> --DMS --noPVclient
+```
+
+Make sure the folding binaries are on your `PATH` (on dexter they come from the
+`CONTRAfold` / `eternafold` conda envs):
+
+```bash
+which contrafold eternafold dot2ct Fold partition ProbabilityPlot
+```
+
+### Option B — recreate the environment anywhere
+
+These are the exact, verified dependency versions (the last Python 2.7-compatible
+releases):
+
+```bash
+conda create -n py2-MaP python=2.7
+conda activate py2-MaP
+pip install "numpy==1.16.6" "pandas==0.24.2" "matplotlib==2.2.3" "scipy==1.2.1"
+# Optional — only if you intend to use PVclient drawing (see note below):
+pip install httplib2
+```
+
+| Package | Verified version |
+|---------|------------------|
+| python | 2.7.18 |
+| numpy | 1.16.6 |
+| pandas | 0.24.2 |
+| matplotlib | 2.2.3 |
+| scipy | 1.2.1 |
+
+You also need the external command-line tools from the
+[Requirements](#external-command-line-tools-must-be-on-your-path) section on
+your `PATH`. `runCheck()` requires `Fold`, `partition`, and `ProbabilityPlot`,
+and expects the RNAstructure **`DATAPATH`** environment variable to be set:
+
+```bash
+export DATAPATH=/path/to/RNAstructure/data_tables
+```
+
+### ⚠️ Always pass `--noPVclient` for reproducible runs
+
+Despite its name, PVclient structure drawing is **ON by default** (the
+`--noPVclient` flag *disables* it). Leaving it on requires the `httplib2` package
+**and** a reachable PseudoViewer web service (the endpoint hardcoded in
+`pvclient.py` dates to 2014 and is likely unavailable). The `py2-MaP`
+environment deliberately omits `httplib2`, so a default run will fail at
+`import pvclient`. **Pass `--noPVclient`** unless you specifically need and have
+a working PVclient setup.
+
+---
+
 ## Usage
 
 ```bash
@@ -99,14 +164,15 @@ Common options (run `python Ultrafold.py -h` for the full list):
 | `--foldStepSize N` | 300 | Fold window spacing |
 | `--trimInterior N` | 300 | nt trimmed to reduce window-end effects |
 | `--SHAPEslope` / `--SHAPEintercept` | 1.8 / -0.6 | SHAPE pseudo-free-energy params |
-| `--noPVclient` | — | Skip PVclient structure drawing |
+| `--noPVclient` | off (drawing **on**) | Disable PVclient structure drawing. PVclient is on by default and needs `httplib2` + a PseudoViewer server — pass this flag to skip it (recommended). |
 
 ### Example
 A small example input (first 3000 nt of ESR1) is provided:
 
 ```bash
+conda activate py2-MaP
 cd src/ultrafold
-python Ultrafold.py ../../examples/ESR1/E_DMS_fwd_ESR1_first_3000.map --DMS
+python Ultrafold.py ../../examples/ESR1/E_DMS_fwd_ESR1_first_3000.map --DMS --noPVclient
 ```
 
 See [examples/ESR1/README.md](examples/ESR1/README.md).
