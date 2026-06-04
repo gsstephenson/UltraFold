@@ -21,8 +21,7 @@ references:
         given-names: "Greggory M."
       - family-names: "Mitchell III"
         given-names: "David"
-        notes: "ShapeMapper 2.2 DMS compatibility (2023)."
-    notes: "Windowed folding approach UltraFold is derived from."
+    notes: "Windowed folding approach UltraFold is derived from. ShapeMapper 2.2 DMS compatibility by David Mitchell III (2023)."
     repository-code: "https://github.com/Weeks-UNC/Superfold"
   - type: software
     title: "Bundled Weeks Lab structure-drawing components (pvclient, arc ribbons)"
