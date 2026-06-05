@@ -3,6 +3,35 @@
 All notable changes to UltraFold are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-06-05
+
+Correctness & robustness fixes over v1.1.0 (no new features). **v1.0.0 remains the frozen citable
+reference.**
+
+### Fixed
+- **Missing-data sentinels no longer corrupt the EternaFold restraint (#4).** ShapeMapper's `-999`
+  no-data sentinel (and any negative / NaN reactivity) was written verbatim into the `.bpp2seq`
+  evidence column, so EternaFold folded against a garbage potential at masked positions. These are
+  now mapped to `-1.0` (EternaFold's `UNKNOWN_POTENTIAL`, treated as "no evidence"). The bundled
+  ESR1 example has 139 such positions. ⚠️ Changes EternaFold-engine output at masked nucleotides.
+- **`runCheck` validates the right toolchain for the chosen engine (#3).** It previously aborted
+  unless RNAstructure's `Fold`/`partition`/`ProbabilityPlot` were present — even on the EternaFold
+  path that never uses them. It now checks `contrafold` + `dot2ct` for `--engine eternafold` and
+  `Fold`/`partition`/`ProbabilityPlot` for `--engine rnastructure`. `DATAPATH` is still required by
+  both (EternaFold's `dot2ct` also loads the data tables). Runs out-of-the-box on EternaFold-only.
+- **Partition 3′ coverage gap closed (#5).** The EternaFold partition window loop could stop up to
+  `stepSize-1` nt short of the 3′ end, leaving terminal nucleotides with no pairing probability /
+  Shannon entropy. A 3′-anchored final window is now appended when needed.
+- **Long-range base pairs no longer crushed in the merged dot plot (#5).** `concatonateDP`'s
+  coverage helper returned a hardcoded `500` for any pair spanning ≥600 nt, dividing its
+  probability by 500. It now uses the real window-coverage count (with a divide-by-zero guard).
+  Affects the EternaFold engine (RNAstructure already bounds spans via `-md`). ⚠️ Changes
+  EternaFold-engine long-range pair probabilities.
+- **Sparse low-SHAPE regions no longer abort the run.** A region with no base pairs made the
+  circle-plot sensitivity/PPV divide by zero (`PyCircleCompareSF.makeCircle`) and crash the whole
+  pipeline; the per-region circle plot is now guarded so the run completes (the region `.ct` is
+  still written).
+
 ## [1.1.0] — 2026-06-05
 
 Adds an optional RNAstructure folding/partition engine alongside EternaFold (a new feature, hence
@@ -75,6 +104,7 @@ implementation** of UltraFold.
 
 See [ROADMAP.md](ROADMAP.md) for planned Python 3, dependency, and GPU work.
 
+[1.1.1]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.1.0
 [1.0.1]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.0.1
 [1.0.0]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.0.0

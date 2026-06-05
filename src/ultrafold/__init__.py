@@ -9,5 +9,5 @@ This file is intentionally Python 2/3-safe so that tooling can read the
 package version without importing the (Python 2) modules.
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __license__ = "GPL-3.0-or-later"

@@ -114,11 +114,11 @@ def main():
     # Start the stopwatch
     startTime = time.time()
     
-    # Check to see if cmd line programs are available
-    runCheck()
-    
     # Parse the input arguments
     args = parseArgs()
+
+    # Check that the external tools the chosen engine needs are available
+    runCheck(args.engine)
     
     # Prepare a temporary sequence file
     temp_seq_file = "temp_seq_file.seq"
@@ -175,7 +175,7 @@ def main():
 """                             
     print("#" * banner_width)
     print("#{0:^{1}}#".format("", banner_width - 2))
-    print("#{0:^{1}}#".format("Ultrafold ver. 1.1.0 - 5 June 2026", banner_width - 2))
+    print("#{0:^{1}}#".format("Ultrafold ver. 1.1.1 - 5 June 2026", banner_width - 2))
     print("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2))
     print("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2))
     print("#{0:^{1}}#".format("", banner_width - 2)) 
@@ -319,13 +319,17 @@ def main():
         print("- Length of structure for region:", len(x.pairList()))
         print("- Start index:", i, "End index:", j)
         
-        # File lines
-        lines = makeCircle(x, x, tmpZeros, tmpSHAPE, {'i': [], 'j': [], 'correl': []}, [], offset=i)
-        
-        w = open(ps_name, "w")
-        w.write(lines)
-        ps_write.write(lines)
-        w.close()
+        # File lines. A region with no base pairs makes the circle-plot sens/PPV
+        # divide by zero (PyCircleCompareSF.makeCircle); guard it so one sparse
+        # region can't abort the whole run (the region .ct is already written).
+        try:
+            lines = makeCircle(x, x, tmpZeros, tmpSHAPE, {'i': [], 'j': [], 'correl': []}, [], offset=i)
+            w = open(ps_name, "w")
+            w.write(lines)
+            ps_write.write(lines)
+            w.close()
+        except Exception as e:
+            print "Circle plot failed for region {0}-{1}: {2}".format(i, j, str(e))
         
         if args.noPVclient:
             try:
@@ -355,7 +359,20 @@ def create_bpp2seq(mapObj, start, end, output_file):
 
         with open(output_file, 'w') as f:
             for i, nucleotide, evidence in sequence_data:
-                line = "{0}\t{1}\te1\t{2:.6f}\n".format(i, nucleotide, evidence)
+                # EternaFold expects a positive "unpairedness potential"; map no-data
+                # (ShapeMapper's -999 sentinel, any negative, or NaN) to -1.0, its
+                # UNKNOWN_POTENTIAL marker, which the parser treats as "no evidence"
+                # rather than folding against a garbage value. See issue #4.
+                try:
+                    ev = float(evidence)
+                except (TypeError, ValueError):
+                    ev = -1.0
+                # -999/negative, NaN (ev != ev), or +inf (-inf is already < 0). +inf is
+                # reachable via the --differentialFile fakeSHAPE overflow and would parse
+                # as a real value that turns the partition posteriors into NaN.
+                if ev < 0 or ev != ev or ev == float("inf"):
+                    ev = -1.0
+                line = "{0}\t{1}\te1\t{2:.6f}\n".format(i, nucleotide, ev)
                 f.write(line)
     except Exception as e:
         print("Error in bpp2seq creation:", str(e))
@@ -651,9 +668,19 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
         fname = "{0}_{1}_{2}".format(prefix, cut_i, cut_j)
         addJobToQueue(cut_i, cut_j, fname)
     else:
+        last_cut_j = 0
         for i in range(0, rnaLength - windowSize + 1, stepSize):
             cut_i = i + 1
             cut_j = min(i + windowSize, rnaLength)
+            fname = "{0}_{1}_{2}".format(prefix, cut_i, cut_j)
+            addJobToQueue(cut_i, cut_j, fname)
+            last_cut_j = cut_j
+        # the stepped loop can stop up to (stepSize-1) nt short of the 3' end;
+        # add a final window anchored at the 3' end so no nucleotides are left
+        # without partition coverage / pairing probability. See issue #5.
+        if last_cut_j < rnaLength:
+            cut_i = max(1, rnaLength - windowSize + 1)
+            cut_j = rnaLength
             fname = "{0}_{1}_{2}".format(prefix, cut_i, cut_j)
             addJobToQueue(cut_i, cut_j, fname)
 
@@ -863,33 +890,42 @@ def mainAssemble(folderPath, trim=300):
     return finalDP
     
     
-def runCheck():
+def runCheck(engine='eternafold'):
     """
-    check to see if necessary commands are available to call
+    Check that the external command-line tools required by the SELECTED engine
+    are callable, plus DATAPATH. The EternaFold path uses contrafold + dot2ct;
+    the RNAstructure path uses Fold/partition/ProbabilityPlot. DATAPATH is needed
+    by BOTH (dot2ct on the EternaFold path also auto-loads the RNAstructure data
+    tables). Previously this always demanded the RNAstructure folding binaries
+    even on the EternaFold path, so an EternaFold-only machine aborted. See issue #3.
     """
-    neededCmds = ["Fold", "partition", "ProbabilityPlot"]
-    count = 0
-    
+    if engine == 'rnastructure':
+        neededCmds = ["Fold", "partition", "ProbabilityPlot"]
+    else:
+        neededCmds = ["contrafold", "dot2ct"]
+
+    missing = []
     for each in neededCmds:
         try:
-            out, err = "", ""
             subprocess.call([each], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            count += 1
         except OSError:
+            missing.append(each)
+
+    if missing:
+        for each in missing:
             print "Program {0} not found in the path".format(each)
-    
-    if len(neededCmds) != count:
         print "...exiting"
-        sys.exit()
-    
+        sys.exit(1)
+
+    # DATAPATH is required by BOTH engines: RNAstructure's Fold/partition obviously,
+    # and the EternaFold path's dot2ct (.db -> .ct) also auto-loads the data tables.
     try:
-        # get the data path and test to see if it is real
         datapath = os.environ.get("DATAPATH")
         os.listdir(datapath)
     except:
-        print "DATAPATH is not set. RNAstructure will not run"
+        print "DATAPATH is not set (needed by dot2ct / RNAstructure)"
         print "...exiting"
-        sys.exit()
+        sys.exit(1)
 
 
 def parseArgs():
@@ -1233,11 +1269,14 @@ def concatonateDP(dpObj, coverage):
     merges duplicate entries in a dp file by averaging
     """
     def calcCoverage(i, j, coverage):
+        # Count how many windows actually cover BOTH ends of the pair. The old
+        # "if j-i >= 600: return 500" shortcut returned a bogus constant for
+        # long-range pairs, dividing their summed probability by 500 and crushing
+        # them by orders of magnitude. Use the real coverage instead. See issue #5.
         n = 0
-        if j-i >= 600: return 500
-        for a,b in coverage:
-            if a <= i <= b and a<= j <= b:
-                n+=1
+        for a, b in coverage:
+            if a <= i <= b and a <= j <= b:
+                n += 1
         return n
         
     #print dpObj
@@ -1297,7 +1336,8 @@ def concatonateDP(dpObj, coverage):
             #outObj.dp['j'] = np.append(outObj.dp['j'], j )
             #outObj.dp['logBP'] = np.append(outObj.dp['logBP'], np.average(dp['logBP'][dpFilter]) )
             #outObj.dp['logBP'][n] = np.average(dp['logBP'][dpFilter])
-            outObj.dp['logBP'][n] = np.sum(dp['logBP'][dpFilter])/outObj.dp['coverage'][n]
+            cov = outObj.dp['coverage'][n]
+            outObj.dp['logBP'][n] = np.sum(dp['logBP'][dpFilter]) / (cov if cov > 0 else 1)
             #print np.average(dp['logBP'][dpFilter]), dp['logBP'][dpFilter]
         
         #remove already searched from full list
