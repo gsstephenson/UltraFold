@@ -190,10 +190,17 @@ def main():
     partitionPairing = dotPlot()
     
     if not debug:
-        partitionPairing = generateAndRunPartition(args.mapObj, args.DMS, args.allConstraints,
-                                                    args.partitionWindowSize, args.partitionStepSize, 
-                                                    args.safeName, args.SHAPEslope, 
-                                                    args.SHAPEintercept, args.np, 
+        if args.engine == 'rnastructure':
+            partitionPairing = generateAndRunPartition_rnastructure(args.mapObj, args.DMS, args.allConstraints,
+                                                    args.partitionWindowSize, args.partitionStepSize,
+                                                    args.safeName, args.SHAPEslope,
+                                                    args.SHAPEintercept, args.np,
+                                                    args.maxPairingDist)
+        else:
+            partitionPairing = generateAndRunPartition(args.mapObj, args.DMS, args.allConstraints,
+                                                    args.partitionWindowSize, args.partitionStepSize,
+                                                    args.safeName, args.SHAPEslope,
+                                                    args.SHAPEintercept, args.np,
                                                     args.maxPairingDist)
     
     # Write the partition function file
@@ -229,8 +236,13 @@ def main():
     
     initialStructure = CT()
     if not debug:
-        initialStructure = generateAndRunFold(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize, 
-                                              args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np, 
+        if args.engine == 'rnastructure':
+            initialStructure = generateAndRunFold_rnastructure(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
+                                              args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
+                                              args.maxPairingDist)
+        else:
+            initialStructure = generateAndRunFold(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
+                                              args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
                                               args.maxPairingDist)
     
     # Write the folded structure
@@ -484,7 +496,18 @@ def ensembleRNA_splitPlot(dpObj, ctObj, pk=None, outFile="arcs.pdf"):
 
 import os
 import subprocess
+import shutil
 from multiprocessing import Pool
+
+
+def _freshDir(dirname):
+    """Create a clean output directory, removing any stale contents from a prior
+    run so the downstream globs (mainAssemble '.dp', MasterModel '.ct') only ever
+    see files produced by THIS run. Prevents cross-run / cross-parameter pollution.
+    """
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
+    os.makedirs(dirname)
 
 
 def _runShellCommand(cmd):
@@ -527,8 +550,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
     print 'Using EternaFold for structure prediction\n'
 
     dirname = "fold_" + prefix
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    _freshDir(dirname)
 
     jobQueue1 = []
     rnaLength = len(mapObj.seq)
@@ -600,11 +622,8 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
     print 'Using EternaFold for the partition function\n'
 
     dirname = "partition_" + prefix
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-        print "Created directory:", dirname
-    else:
-        print "Using existing directory:", dirname
+    _freshDir(dirname)
+    print "Created directory:", dirname
 
     rnaLength = len(mapObj.seq)
     print "Initializing partition function calculation"
@@ -664,6 +683,116 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
     assert dpObject.length is not None, "dpObject length should not be None"
 
     return dpObject
+
+
+def generateAndRunFold_rnastructure(mapObj, usedms, constraints, dsConstraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
+    """RNAstructure (Fold) engine path -- the faithful SuperFold method.
+
+    Unlike the EternaFold path, RNAstructure's ``Fold`` natively honors the
+    reactivity restraint (``-sh``/``-dmsnt``), the maximum pairing distance
+    (``-md``) and the hard-constraint file (``-C``). So the user ss/pk
+    constraints AND the 99%-confident partition pairs that genFiles writes into
+    ``{f}.const`` are actually applied here -- recovering the
+    constrain-and-refold loop the EternaFold engine cannot express
+    (issues #6/#7/#8). Reuses the shared windowing + MasterModel consensus.
+    """
+    print 'Using RNAstructure (Fold) for structure prediction\n'
+
+    dirname = "fold_" + prefix
+    _freshDir(dirname)
+
+    rnaLength = len(mapObj.seq)
+    jobQueue1 = []
+
+    def queueFold(cut_i, cut_j):
+        fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, cut_i, cut_j)
+        genFiles(mapObj, constraints, dsConstraints, cut_i, cut_j, fname)
+        if usedms:
+            cmd = "Fold {0}.seq {0}.ct -dmsnt {0}.shape -md {1} -C {0}.const -m 100 -w 0".format(fname, maxDist)
+        else:
+            cmd = "Fold {0}.seq {0}.ct -sh {0}.shape -sm {1} -si {2} -md {3} -C {0}.const -m 100 -w 0".format(fname, shapeSlope, shapeIntercept, maxDist)
+        jobQueue1.append(cmd)
+
+    if rnaLength - windowSize < 200:
+        queueFold(1, rnaLength)
+    else:
+        for i in range(1, rnaLength - windowSize, stepSize):
+            queueFold(i, i + windowSize - 1)
+        for i in [-100, -50, 50, 100]:
+            queueFold(1, windowSize + i)
+            queueFold(rnaLength - windowSize + i, rnaLength)
+
+    for cmd, returncode, err in _dispatchCommands(jobQueue1, nprocs):
+        if returncode != 0:
+            print "Error executing command: ", cmd
+            print "Error details: ", err
+        else:
+            print "Successfully executed command: ", cmd
+
+    targetRNA = CT()
+    targetRNA.pair2CT([], "".join(mapObj.seq))
+    targetFolderRNAs, baseCount = MasterModel_readAndRenumberAll(targetRNA, dirname, prefix)
+    pairs = MasterModel_findOverlapPairs(targetFolderRNAs, baseCount)
+    masterModelStructure = CT()
+    masterModelStructure.pair2CT(pairs, targetRNA.seq, 'ConsensusModel')
+    return masterModelStructure
+
+
+def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
+    """RNAstructure (partition + ProbabilityPlot) engine path.
+
+    Computes Boltzmann base-pairing probabilities with the SHAPE/DMS restraint
+    and the ``-md`` locality cutoff applied natively, emitting RNAstructure
+    ``-log10`` dot-plot (.dp) files that the shared mainAssemble already reads.
+    Adds explicit 5'/3' end windows (as upstream SuperFold does), which also
+    avoids the partition 3' coverage gap of the EternaFold path (issue #5).
+    """
+    print 'Using RNAstructure (partition) for the partition function\n'
+
+    dirname = "partition_" + prefix
+    _freshDir(dirname)
+
+    rnaLength = len(mapObj.seq)
+    partJobs = []
+    ppJobs = []
+
+    def queuePart(cut_i, cut_j):
+        fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, cut_i, cut_j)
+        # partition takes no ds constraints (only ss); pass empty pairs like upstream
+        genFiles(mapObj, constraints, {0: [], 1: []}, cut_i, cut_j, fname)
+        if usedms:
+            cmd = "partition {0}.seq {0}.pfs -dmsnt {0}.shape -md {1} -C {0}.const".format(fname, maxDist)
+        else:
+            cmd = "partition {0}.seq {0}.pfs -sh {0}.shape -sm {1} -si {2} -md {3} -C {0}.const".format(fname, shapeSlope, shapeIntercept, maxDist)
+        partJobs.append(cmd)
+        ppJobs.append("ProbabilityPlot {0}.pfs {0}.dp -t".format(fname))
+
+    if rnaLength - windowSize < 200:
+        queuePart(1, rnaLength)
+    else:
+        for i in range(1, rnaLength - windowSize, stepSize):
+            queuePart(i, i + windowSize - 1)
+        for i in [-100, -50, 50, 100]:
+            queuePart(1, windowSize + i)
+            queuePart(rnaLength - windowSize + i, rnaLength)
+
+    # run all partition jobs, then convert each .pfs to a .dp via ProbabilityPlot
+    for cmd, returncode, err in _dispatchCommands(partJobs, nprocs):
+        if returncode != 0:
+            print "Error executing command: ", cmd
+            print "Error details: ", err
+        else:
+            print "Successfully executed command: ", cmd
+    for cmd, returncode, err in _dispatchCommands(ppJobs, nprocs):
+        if returncode != 0:
+            print "Error executing command: ", cmd
+            print "Error details: ", err
+        else:
+            print "Successfully executed command: ", cmd
+
+    dpObject = mainAssemble(dirname, trim=300)
+    return dpObject
+
 
 def mainAssemble(folderPath, trim=300):
     print("Checking files in {0}".format(folderPath))
@@ -864,7 +993,12 @@ def parseArgs():
     arg.add_argument('--foldStepSize',type=int,default=300, help='spacing between Fold windows, default:300')
     arg.add_argument('--maxPairingDist', type=int, default=600, help='Maximum pairing distance for partition and Fold, default:600')
     arg.add_argument('--noPVclient', action='store_false', help="Don't draw secondary structures using PVclient")
-    
+    arg.add_argument('--engine', type=str, default='eternafold', choices=['eternafold', 'rnastructure'],
+                     help="folding/partition engine. 'eternafold' (default): SHAPE/DMS as soft learned "
+                          "evidence via contrafold. 'rnastructure': Fold/partition with native -sh/-dmsnt "
+                          "restraints, -md max-distance, and -C hard constraints (applies the user ss/pk "
+                          "AND the 99-percent partition pairs). default:eternafold")
+
     o = arg.parse_args()
     
     # Convert profile file to map object
@@ -1038,6 +1172,13 @@ def mainAssemble(folderPath, trim=300):
     if not targetDP:
         print "Error: No valid dp files were loaded."
         return dotPlot()  # Assuming the dotPlot can be initialized without arguments
+
+    # Single window spans the whole RNA (1..rnaLength); trimming/merging it would
+    # discard real terminal data. Return it untrimmed (restores the upstream
+    # SuperFold guard lost here). Reachable for any RNA shorter than one window
+    # (e.g. partitionWindowSize 1200 -> any RNA < ~1400 nt).
+    if len(targetDP) == 1:
+        return targetDP[targetDP.keys()[0]]
     
     firstDP = min(targetDP.keys(), key=lambda x: x[0])[0]
     lastDP = max(targetDP.keys(), key=lambda x: x[1])[1]
