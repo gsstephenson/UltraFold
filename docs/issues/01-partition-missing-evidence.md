@@ -1,7 +1,7 @@
 # Partition step ignores reactivity — `--evidence` missing (BPP/Shannon are sequence-only)
 
 <!-- labels: bug, critical, science, engine -->
-<!-- milestone: v1.1 -->
+<!-- milestone: v1.0.1 -->
 
 ## Summary
 The partition/posteriors command omits `--evidence`, so `contrafold` ignores the reactivity
@@ -35,7 +35,7 @@ contrafold predict {f}.bpp2seq --evidence --numdatasources 1 --params .../Eterna
 - [ ] Partition `.bps` posteriors **differ** when the reactivity column is present vs zeroed
       (proves evidence is now consumed).
 - [ ] Re-run ESR1 example; confirm merged `.dp`, `shannon_*.txt`, and region calls change.
-- [ ] Documented as a v1.0.0→v1.1 behavior change (this is a correctness fix, not a silent edit).
+- [ ] Documented as a v1.0.0→v1.0.1 behavior change (this is a correctness fix, not a silent edit).
 
 ## References
 v2 plan headline finding #3; cross-confirmed by the gap analysis and the SOTA survey.

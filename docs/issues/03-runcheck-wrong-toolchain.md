@@ -1,7 +1,7 @@
 # `runCheck()` validates the wrong toolchain (RNAstructure required but unused; `dot2ct` unchecked)
 
 <!-- labels: bug, high, packaging -->
-<!-- milestone: v1.1 -->
+<!-- milestone: v1.0.1 -->
 
 ## Summary
 `runCheck()` aborts unless RNAstructure `Fold`, `partition`, `ProbabilityPlot` and `DATAPATH`

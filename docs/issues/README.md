@@ -25,11 +25,11 @@ Or create labels/milestones first, then pass `--label`/`--milestone` per file.
 
 | # | Title | Milestone | Priority |
 |---|---|---|---|
-| 01 | Partition step ignores reactivity (`--evidence` missing) | v1.1 | critical |
-| 02 | Restore parallel window dispatch; honor `--np` | v1.1 | high |
-| 03 | `runCheck()` validates the wrong toolchain | v1.1 | high |
-| 04 | Missing-data sentinels (`-999`/NaN) fed to the engine as evidence | v1.1 | high |
-| 05 | `concatonateDP` magic-500 / coverage division / partition 3′ gap | v1.1 | high |
+| 01 | Partition step ignores reactivity (`--evidence` missing) | v1.0.1 | critical |
+| 02 | Restore parallel window dispatch; honor `--np` | v1.0.1 | high |
+| 03 | `runCheck()` validates the wrong toolchain | v1.0.1 | high |
+| 04 | Missing-data sentinels (`-999`/NaN) fed to the engine as evidence | v1.0.1 | high |
+| 05 | `concatonateDP` magic-500 / coverage division / partition 3′ gap | v1.0.1 | high |
 | 06 | Decide constraint behavior (EternaFold constraints⊕evidence) | v2.0 | high |
 | 07 | Inert CLI knobs — wire or remove | v2.0 | high |
 | 08 | Add RNAstructure 6.6 as a parallel cross-validation track | v2.0 | high |

@@ -1,7 +1,7 @@
 # Restore parallel window dispatch; honor `--np`
 
 <!-- labels: bug, performance, high -->
-<!-- milestone: v1.1 -->
+<!-- milestone: v1.0.1 -->
 
 ## Summary
 The per-window `contrafold` jobs are embarrassingly parallel but run **serially**. `batchSubmit`

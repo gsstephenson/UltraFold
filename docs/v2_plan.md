@@ -52,14 +52,14 @@ landscape. Every issue cites concrete `file:line` evidence.
 
 ## Milestones & issues
 
-### v1.1 — Correctness hotfixes (no engine change; behavior-*correcting*)
+### v1.0.1 — Correctness hotfixes (no engine change; behavior-*correcting*)
 - **[01]** Partition step ignores reactivity — add `--evidence` *(critical)*
 - **[02]** Restore parallel window dispatch; honor `--np` *(high)*
 - **[03]** `runCheck()` validates the wrong toolchain *(high)*
 - **[04]** Missing-data sentinels (`-999`/NaN) fed as evidence *(high)*
 - **[05]** `concatonateDP` magic-500 / coverage division / partition 3′ gap *(high)*
 
-> ⚠️ These change scientific output (they *correct* it). Land them as **v1.1**, validated
+> ⚠️ These change scientific output (they *correct* it). Land them as **v1.0.1**, validated
 > against v1.0.0 with the bug clearly documented — do **not** silently edit v1.0.0.
 
 ### v2.0 — Faithful engine completion & decisions

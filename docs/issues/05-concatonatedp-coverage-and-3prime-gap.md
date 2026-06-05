@@ -1,7 +1,7 @@
 # `concatonateDP` magic-500 / coverage division + partition 3′ coverage gap
 
 <!-- labels: bug, high, science -->
-<!-- milestone: v1.1 -->
+<!-- milestone: v1.0.1 -->
 
 ## Summary
 Two window-merge defects that silently distort the merged dot plot (and therefore the 99%
@@ -35,7 +35,7 @@ long enough to window, invisibly.
 ## Acceptance criteria
 - [ ] No hardcoded `500`; long-range pair probabilities are not artificially crushed.
 - [ ] All nucleotides (incl. the 3′ terminus) receive coverage / pairing probability.
-- [ ] Regression check on ESR1 before/after, documented as a v1.1 correctness change.
+- [ ] Regression check on ESR1 before/after, documented as a v1.0.1 correctness change.
 
 ## References
 99-agent audit (confirmed findings) + gap analysis; refuted div-by-zero noted in audit-method memo.

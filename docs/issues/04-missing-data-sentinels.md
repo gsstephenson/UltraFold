@@ -1,7 +1,7 @@
 # Missing-data sentinels (`-999`/NaN) are fed to the engine as evidence
 
 <!-- labels: bug, high, science -->
-<!-- milestone: v1.1 -->
+<!-- milestone: v1.0.1 -->
 
 ## Summary
 `create_bpp2seq` writes the raw normalized reactivity verbatim into the evidence column,
