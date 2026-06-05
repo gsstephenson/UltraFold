@@ -175,7 +175,7 @@ def main():
 """                             
     print("#" * banner_width)
     print("#{0:^{1}}#".format("", banner_width - 2))
-    print("#{0:^{1}}#".format("Ultrafold ver. 1.0.1 - 5 June 2026", banner_width - 2))
+    print("#{0:^{1}}#".format("Ultrafold ver. 1.1.0 - 5 June 2026", banner_width - 2))
     print("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2))
     print("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2))
     print("#{0:^{1}}#".format("", banner_width - 2)) 
