@@ -175,7 +175,7 @@ def main():
 """                             
     print("#" * banner_width)
     print("#{0:^{1}}#".format("", banner_width - 2))
-    print("#{0:^{1}}#".format("Ultrafold ver. 1.0 - 7 November 2024", banner_width - 2))
+    print("#{0:^{1}}#".format("Ultrafold ver. 1.0.1 - 5 June 2026", banner_width - 2))
     print("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2))
     print("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2))
     print("#{0:^{1}}#".format("", banner_width - 2)) 
@@ -484,6 +484,41 @@ def ensembleRNA_splitPlot(dpObj, ctObj, pk=None, outFile="arcs.pdf"):
 
 import os
 import subprocess
+from multiprocessing import Pool
+
+
+def _runShellCommand(cmd):
+    """Run a single shell command to completion.
+
+    Module-level (and therefore picklable) so it can be dispatched by a
+    multiprocessing.Pool worker. Returns (cmd, returncode, stderr).
+    """
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    return (cmd, process.returncode, err)
+
+
+def _dispatchCommands(commands, nprocs):
+    """Run independent shell commands concurrently across up to ``nprocs`` workers.
+
+    The per-window fold/partition jobs are independent, so they are fanned out
+    instead of being run one-at-a-time. Falls back to serial execution when
+    ``nprocs`` <= 1 or there is a single command. The returned list of
+    (cmd, returncode, stderr) tuples is in the same order as ``commands``, so
+    callers can zip it back against their job queue. See issue #2.
+    """
+    if not commands:
+        return []
+    if nprocs and int(nprocs) > 1 and len(commands) > 1:
+        pool = Pool(processes=min(int(nprocs), len(commands)))
+        try:
+            results = pool.map(_runShellCommand, commands)
+        finally:
+            pool.close()
+            pool.join()
+        return results
+    return [_runShellCommand(c) for c in commands]
+
 
 def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
     """
@@ -534,10 +569,12 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
             jobQueue1.append((foldCMD, "{0}.db".format(fname), "{0}.ct".format(fname)))
             debug_print("Queued 3' end job for fold generation", file_name=fname, cut_range=(cut3prime_i, rnaLength))
 
-    for foldCMD, db_filename, ct_filename in jobQueue1:
-        process = subprocess.Popen(foldCMD, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        if process.returncode != 0:
+    # run the fold commands concurrently (each window is independent); honors --np
+    foldResults = _dispatchCommands([job[0] for job in jobQueue1], nprocs)
+
+    # convert successful windows to CT only after the pool has fully drained
+    for (foldCMD, returncode, err), (_cmd, db_filename, ct_filename) in zip(foldResults, jobQueue1):
+        if returncode != 0:
             print "Error executing command: ", foldCMD
             print "Error details: ", err
         else:
@@ -583,7 +620,11 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
         output_bps_file = "{0}/{1}.bps".format(dirname, fname)
         cutoff_value = "0.000001"
 
-        foldCMD = "contrafold predict {0}.bpp2seq --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 --posteriors {1} {2} --numdatasources 1".format(fname, cutoff_value, output_bps_file)
+        # --evidence makes contrafold actually use the SHAPE/DMS reactivity column of the
+        # .bpp2seq file. Without it the partition posteriors (and therefore the merged dot
+        # plot, the 99% constraint pairs, and the Shannon-entropy/region analysis) are
+        # computed sequence-only. See issue #1.
+        foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 --posteriors {1} {2}".format(fname, cutoff_value, output_bps_file)
         jobQueue1.append(foldCMD)
 
     if rnaLength - windowSize < 200:
@@ -597,10 +638,9 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
             fname = "{0}_{1}_{2}".format(prefix, cut_i, cut_j)
             addJobToQueue(cut_i, cut_j, fname)
 
-    for cmd in jobQueue1:
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        if process.returncode != 0:
+    # run the partition commands concurrently (each window is independent); honors --np
+    for cmd, returncode, err in _dispatchCommands(jobQueue1, nprocs):
+        if returncode != 0:
             print "Error executing command: ", cmd
             print "Error details: ", err
         else:
