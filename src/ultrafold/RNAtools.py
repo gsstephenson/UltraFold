@@ -539,7 +539,7 @@ def readSeq(fIN, type='RNAstructure'):
     for i in seqJoin:
         if i == '1': break
         seq.append(i)
-    return processed, name
+    return seq, name
 
 
 class dotPlot:

@@ -37,13 +37,9 @@
 # all rights reserved
 # 1.2 build
 ##################################################################################
-import batchSubmit as batch
-import argparse, sys, shlex, os, subprocess, hashlib, time
+import argparse, sys, os, subprocess, hashlib, time
 from RNAtools import dotPlot, CT, padCT, writeSHAPE
 import pandas as pd
-import os
-import shlex
-import subprocess
 import math
 
 # set the plotting environment to be non-interactive
@@ -119,24 +115,7 @@ def main():
 
     # Check that the external tools the chosen engine needs are available
     runCheck(args.engine)
-    
-    # Prepare a temporary sequence file
-    temp_seq_file = "temp_seq_file.seq"
-    with open(temp_seq_file, 'w') as seq_file:
-        seq_data = args.mapObj.seq  # Assuming seq attribute holds sequence data
-        seq_file.write(";\n\n" + "RNA_sequence" + "\n\n")
-        for i, nuc in enumerate(seq_data):
-            seq_file.write(nuc)
-            if (i + 1) % 50 == 0:
-                seq_file.write("\n")
-            elif (i + 1) % 10 == 0:
-                seq_file.write(" ")
-        seq_file.write("\n1\n")
 
-    # Prepare bpp2seq file
-    bpp2seq_file = "profile_data.bpp2seq"
-    create_bpp2seq(args.mapObj, 1, len(args.mapObj.seq), bpp2seq_file)
-    
     # Set the results directory paths
     currDir = os.getcwd()
     resultsFile = 'results_' + args.safeName
@@ -291,7 +270,6 @@ def main():
             import pvclient
         except:
             print "PVclient failed to load"
-            args.drawPVclient = False
     
     for i, j in lowSHAPEregions:
         # Define file names
@@ -821,75 +799,6 @@ def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize
     return dpObject
 
 
-def mainAssemble(folderPath, trim=300):
-    print("Checking files in {0}".format(folderPath))
-    
-    dp_files = sorted([f for f in os.listdir(folderPath) if f.endswith('.bps')])
-    for dpFile in dp_files:
-        print("Reading file: {0}".format(dpFile))
-
-    if not dp_files:
-        print("No .bps files found in directory: {0}".format(folderPath))
-        return dotPlot()  # or raise an error if this should not happen
-
-    # Initialize handling of .bps files into dp objects
-    print("Begin assembly of files into dotPlot objects")
-    targetDP = {}
-    
-    for num, dpFileName in enumerate(dp_files, start=1):
-        dp = dotPlot(os.path.join(folderPath, dpFileName))
-        
-        # Debug print basic info from dp object or raise error if invalid
-        print("Processed: {0} with initial length: {1}".format(dpFileName, getattr(dp, 'length', 'N/A')))
-        
-        start = int(dpFileName.split("_")[-2])
-        end = int(dpFileName.split("_")[-1].split(".")[0])
-        targetDP[(start, end)] = dp
-
-        # Debugging Detail
-        if len(dp.dp['i']) == 0 or len(dp.dp['j']) == 0:
-            print("Warning: Empty dp for {0}".format(dpFileName))
-        if dp.length is None:
-            print("Error: Missing length attribute in {0}".format(dpFileName))
-
-    if not targetDP:
-        raise RuntimeError("Failed to load any valid dp files!")
-    
-    firstDP = min(targetDP.keys(), key=lambda x: x[0])[0]
-    lastDP = max(targetDP.keys(), key=lambda x: x[1])[1]
-    print("First DP start: {0}".format(firstDP))
-    print("Last DP end: {0}".format(lastDP))
-
-    # Create and fill finalDP object
-    finalDP = dotPlot(name="assembled dotPlot", length=lastDP)
-    
-    print("Initialized finalDP with length: {0}".format(lastDP))
-
-    for dpKey in targetDP.keys():
-        dp = targetDP[dpKey]
-        print("Trimming window: {0}".format(dpKey))
-
-        if dpKey[0] == firstDP:
-            dp = dp.trimEnds(trim, which='3prime')
-        elif dpKey[1] == lastDP:
-            dp = dp.trimEnds(trim, which='5prime')
-        else:
-            dp = dp.trimEnds(trim)
-
-        dp.dp['i'] += dpKey[0] - 1
-        dp.dp['j'] += dpKey[0] - 1
-
-        finalDP.dp['i'] = np.append(finalDP.dp['i'], dp.dp['i'])
-        finalDP.dp['j'] = np.append(finalDP.dp['j'], dp.dp['j'])
-        finalDP.dp['logBP'] = np.append(finalDP.dp['logBP'], dp.dp['logBP'])
-
-    print("File assembly complete. Final coverage being computed.")
-    finalDP = concatonateDP(finalDP, [(k[0], k[1]) for k in targetDP.keys()])
-    print("Concatenation completed. Verified FinalDP with length: {0}".format(finalDP.length))
-
-    return finalDP
-    
-    
 def runCheck(engine='eternafold'):
     """
     Check that the external command-line tools required by the SELECTED engine

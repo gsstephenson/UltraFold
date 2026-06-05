@@ -14,6 +14,19 @@ All notable changes to UltraFold are documented here. This project adheres to
   installed. Goldens captured from v1.1.1. See [`tests/README.md`](tests/README.md). *Dev tooling
   only — no change to released behavior, so no version bump.*
 
+### Changed
+- **Port-prep code hygiene (#13).** Behavior-preserving cleanup ahead of the Python 3 port — each
+  change verified **byte-identical** against the v1.1.1 golden outputs on both engines (incl. the
+  region `.ps`):
+  - Deleted the dead, shadowed `.bps`-reading `mainAssemble` (the live `.dp` one is unchanged) — −69 lines.
+  - Reconciled the duplicate, divergent `CT` class in `PyCircleCompareSF.py` to import the single
+    `RNAtools.CT` (the pipeline already passed `RNAtools.CT` objects to `makeCircle`) — −340 lines.
+  - Removed the unused `batchSubmit` import and the duplicate `os`/`shlex`/`subprocess` imports.
+  - Removed the dead startup writes (`temp_seq_file.seq`, `profile_data.bpp2seq`) and the dead
+    `args.drawPVclient` assignment.
+  - Fixed `readSeq()`'s `return processed` (undefined name) → `return seq`.
+  *No change to released behavior, so no version bump.*
+
 ## [1.1.1] — 2026-06-05
 
 Correctness & robustness fixes over v1.1.0 (no new features). **v1.0.0 remains the frozen citable
