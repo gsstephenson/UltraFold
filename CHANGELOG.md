@@ -3,6 +3,17 @@
 All notable changes to UltraFold are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Regression test harness + CI (#11).** Pure-Python unit tests (RNAtools `CT`/`dotPlot`, the
+  missing-data sanitizer) plus end-to-end golden-output tests that run the real pipeline on a
+  fixed ESR1 slice and byte-compare the merged `.dp`/`.ct`/`shannon` against committed references
+  per engine, including a `--np 4` vs `--np 1` determinism check. GitHub Actions runs the unit
+  tests under a Python 2.7 conda env; the end-to-end tests skip where the folding tools aren't
+  installed. Goldens captured from v1.1.1. See [`tests/README.md`](tests/README.md). *Dev tooling
+  only — no change to released behavior, so no version bump.*
+
 ## [1.1.1] — 2026-06-05
 
 Correctness & robustness fixes over v1.1.0 (no new features). **v1.0.0 remains the frozen citable

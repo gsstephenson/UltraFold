@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Python 2.7 unit tests for the reference implementation (src/ultrafold).
+  # The end-to-end golden tests need the external folding tools (contrafold /
+  # RNAstructure) + DATAPATH and skip automatically here; run them on a machine
+  # that has those tools (see tests/README.md).
+  unit-py27:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 2.7 (conda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "2.7"
+          auto-activate-base: false
+          activate-environment: py27
+      - name: Install last py2.7-compatible deps
+        run: conda install -y -c conda-forge "numpy=1.16" "pandas=0.24" "matplotlib=2.2"
+      - name: Byte-compile the reference implementation
+        run: python -m py_compile src/ultrafold/*.py
+      - name: Run unit tests (external-tool e2e tests skip automatically)
+        run: |
+          cd tests
+          python -m unittest discover -p 'test_*.py' -v
+
+  # The tools/ helpers are Python 3 (f-strings); compile them under py3.
+  tools-py3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Byte-compile the Python 3 tools
+        run: python -m py_compile tools/*.py
