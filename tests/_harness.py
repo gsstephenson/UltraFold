@@ -1,4 +1,4 @@
-"""Shared helpers for the UltraFold regression harness (Python 2.7).
+"""Shared helpers for the UltraFold regression harness (Python 3).
 
 The end-to-end golden tests drive the real pipeline (the same way a user does)
 on a small, fixed ESR1 slice and compare the merged outputs against committed

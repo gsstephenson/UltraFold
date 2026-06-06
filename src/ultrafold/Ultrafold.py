@@ -154,7 +154,7 @@ def main():
 """)                             
     print(("#" * banner_width))
     print(("#{0:^{1}}#".format("", banner_width - 2)))
-    print(("#{0:^{1}}#".format("Ultrafold ver. 2.0.0 - 5 June 2026", banner_width - 2)))
+    print(("#{0:^{1}}#".format("Ultrafold ver. 2.0.0 - 6 June 2026", banner_width - 2)))
     print(("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2)))
     print(("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2)))
     print(("#{0:^{1}}#".format("", banner_width - 2))) 
@@ -904,7 +904,12 @@ def parseArgs():
                 #else:
                 #    g = 2.57275425027 * c + 0.0239
             out.append(g)
-        return np.array(out)*(zfactor>0)
+        out = np.array(out)
+        # a 4-column differential file has no zfactor column -> keep all positions
+        # (avoids a (N,) * (0,) broadcast error); otherwise mask by significance
+        if zfactor.size == 0:
+            return out
+        return out * (zfactor > 0)
     
     def fakeSHAPE(shape,diff,slope,intercept):
         #shape_f,diff_fmap=(float(shape)),map(float(diff))
@@ -921,7 +926,10 @@ def parseArgs():
             if i >-500 and j>-500:
                 g = i + j
             #out.append(g)
-            out.append(np.exp( (g-intercept) / slope ) -1.0)
+            val = np.exp( (g-intercept) / slope ) - 1.0
+            if not np.isfinite(val):  # exp overflow -> no-data sentinel
+                val = -999
+            out.append(val)
         return out
 
     arg = argparse.ArgumentParser(description="UltraFold takes a windowing approach to break up the folding of large RNAs. Dividing the folding of a large RNA into smaller segments allows modern multi-core workstations to model RNA structures in a modest amount of clock-time. See README file for further details and file descriptions", epilog="UltraFold by George Stephenson - adaptation of SuperFold by Greggory M. Rice (gmr@unc.edu)")
@@ -1388,6 +1396,10 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
         return transitions
 
     def cullTransitions(transitions, minLength):
+        # findTransitions returns [] for flat / all-NaN reactivity; guard the
+        # empty/single case so the trailing transitions[-1] access can't IndexError.
+        if len(transitions) <= 1:
+            return list(transitions)
         dist = []
         culled = []
         skip = False
@@ -1547,6 +1559,11 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
 
     except Exception as e:
         print("[ERROR] An exception occurred while defining regions:", str(e))
+        regionPair.append([1, len(shape)])
+
+    # no transitions found (flat / all-NaN reactivity) -> treat the whole RNA as
+    # one region so the caller never receives an empty list
+    if not regionPair:
         regionPair.append([1, len(shape)])
 
     print("Unexpanded regions:")

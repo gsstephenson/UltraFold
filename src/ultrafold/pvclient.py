@@ -448,7 +448,9 @@ def getEPS(title, startNuc, seq, struct):
     # httplib2 method, handles cacheing/packet splitting properly
     http = httplib2.Http(timeout=30)
     response, content = http.request(URL, 'POST', headers=headers, body=xmlRequest)
-    stringResponse = str(content)
+    # httplib2 returns bytes on Python 3; decode to text so the line-anchored
+    # regexes in modifyEPS see real newlines (str(bytes) would give a one-line repr)
+    stringResponse = content.decode('utf-8', 'replace') if isinstance(content, (bytes, bytearray)) else content
     #print stringResponse
     # pull eps file from response
     epsRegex = re.compile(r'<WSPVOut_EPS>(.*?)</WSPVOut_EPS>', re.DOTALL)

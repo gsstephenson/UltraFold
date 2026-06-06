@@ -56,9 +56,9 @@ preserved in the source files.
 ## Requirements
 
 ### Python
-- **Python 2.7**
+- **Python 3** (≥3.6) for v2.x. (The v1.x line is Python 2.7 — see the v1.x tags.)
 - Python packages: see [requirements.txt](requirements.txt) (`numpy`, `pandas`,
-  `matplotlib`; `httplib2` only if you use PVclient drawing).
+  `matplotlib`; `httplib2` only if you enable PVclient drawing with `--pvclient`).
 
 ### External command-line tools (must be on your `PATH`)
 UltraFold orchestrates external folding engines via subprocess calls:
@@ -131,15 +131,14 @@ and expects the RNAstructure **`DATAPATH`** environment variable to be set:
 export DATAPATH=/path/to/RNAstructure/data_tables
 ```
 
-### ⚠️ Always pass `--noPVclient` for reproducible runs
+### PVclient structure drawing (off by default in v2)
 
-Despite its name, PVclient structure drawing is **ON by default** (the
-`--noPVclient` flag *disables* it). Leaving it on requires the `httplib2` package
-**and** a reachable PseudoViewer web service (the endpoint hardcoded in
-`pvclient.py` dates to 2014 and is likely unavailable). The `py2-MaP`
-environment deliberately omits `httplib2`, so a default run will fail at
-`import pvclient`. **Pass `--noPVclient`** unless you specifically need and have
-a working PVclient setup.
+In v2.x, PVclient (PseudoViewer) structure drawing is **off by default**. Pass
+`--pvclient` to enable it — it requires the `httplib2` package **and** a reachable
+PseudoViewer web service (the endpoint hardcoded in `pvclient.py` dates to 2014
+and is likely unavailable), so most runs should leave it off. `--noPVclient` is
+retained as a deprecated no-op alias (in v1.x, drawing was on by default and
+`--noPVclient` disabled it).
 
 ---
 
@@ -166,7 +165,9 @@ Common options (run `python Ultrafold.py -h` for the full list):
 | `--foldStepSize N` | 300 | Fold window spacing |
 | `--trimInterior N` | 300 | nt trimmed to reduce window-end effects |
 | `--SHAPEslope` / `--SHAPEintercept` | 1.8 / -0.6 | SHAPE pseudo-free-energy params |
-| `--noPVclient` | off (drawing **on**) | Disable PVclient structure drawing. PVclient is on by default and needs `httplib2` + a PseudoViewer server — pass this flag to skip it (recommended). |
+| `--engine {eternafold,rnastructure}` | eternafold | Folding/partition engine (see [CHANGELOG](CHANGELOG.md)) |
+| `--pvclient` | off | Enable PVclient (PseudoViewer) structure drawing; needs `httplib2` + a server |
+| `--noPVclient` | — | Deprecated no-op alias (drawing is already off by default) |
 
 ### Example
 A small example input (first 3000 nt of ESR1) is provided:

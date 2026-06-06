@@ -3,7 +3,7 @@
 All notable changes to UltraFold are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — 2026-06-05
+## [2.0.0] — 2026-06-06
 
 **Python 3 port.** UltraFold now runs on Python 3; the v1.x line stays Python 2.7, frozen at the
 `v1.0.0` tag for citation. Validated to reproduce the v1.1.1 reference within float-repr precision:
@@ -28,9 +28,9 @@ simply prints more float digits) — verified on both engines against the v1.1.1
   missing-data sanitizer) plus end-to-end golden-output tests that run the real pipeline on a
   fixed ESR1 slice and byte-compare the merged `.dp`/`.ct`/`shannon` against committed references
   per engine, including a `--np 4` vs `--np 1` determinism check. GitHub Actions runs the unit
-  tests under a Python 2.7 conda env; the end-to-end tests skip where the folding tools aren't
-  installed. Goldens captured from v1.1.1. See [`tests/README.md`](tests/README.md). *Dev tooling
-  only — no change to released behavior, so no version bump.*
+  tests under Python 3; the end-to-end tests skip where the folding tools aren't installed. (The
+  harness was first added on the v1.x line and the goldens were re-captured under Python 3 for
+  v2.0.0.) See [`tests/README.md`](tests/README.md).
 
 ### Changed
 - **Port-prep code hygiene (#13).** Behavior-preserving cleanup ahead of the Python 3 port — each
