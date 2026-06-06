@@ -65,16 +65,16 @@ class shapeMAP:
         if fIN:
             parsed = self.readFile(fIN)
             
-            self.ntNum = map(int,parsed[0])
-            self.shape = map(float,parsed[1])
-            self.stdErr= map(float,parsed[2])
+            self.ntNum = list(map(int,parsed[0]))
+            self.shape = list(map(float,parsed[1]))
+            self.stdErr= list(map(float,parsed[2]))
             self.seq = parsed[3]
             
-            if len(parsed.keys()) == 5:
+            if len(list(parsed.keys())) == 5:
                 try:
-                    self.zfactor = map(float,parsed[4])
+                    self.zfactor = list(map(float,parsed[4]))
                 except:
-                    print "formatting error: {0}\nNon float in zfactor column".format(fIN)
+                    print("formatting error: {0}\nNon float in zfactor column".format(fIN))
                     sys.exit()
             # replace T's with U's
             for i in range(len(self.seq)):
@@ -84,7 +84,7 @@ class shapeMAP:
     def readFile(self,fIN):
         data = {}
         lineNum = 0
-        for line in open(fIN, "rU").readlines():
+        for line in open(fIN, "r").readlines():
             x = line.rstrip().split()
             
             # initialize an array obj for the first line
@@ -121,9 +121,9 @@ def main():
     resultsFile = 'results_' + args.safeName
     resultsDir = os.path.join(currDir, 'results')
 
-    print 'Current Directory:', currDir
-    print 'Results Directory:', resultsDir
-    print 'Results Log File:', resultsFile
+    print('Current Directory:', currDir)
+    print('Results Directory:', resultsDir)
+    print('Results Log File:', resultsFile)
 
     try:
         os.mkdir(resultsDir)
@@ -138,10 +138,10 @@ def main():
     # Set location of the logfile
     logFile = open("{0}/log_{1}.txt".format(resultsDir,resultsFile), "a")
     sys.stdout = logFile
-    print >> sys.stderr, "log file location: {0}/log_{1}.txt".format(resultsDir, resultsFile)
+    print("log file location: {0}/log_{1}.txt".format(resultsDir, resultsFile), file=sys.stderr)
     banner_width = 63  # Change this value to adjust the width as needed
-    print("\n" * 3 + "#" * banner_width)
-    print """
+    print(("\n" * 3 + "#" * banner_width))
+    print(r"""
 #          (           (              (        )   (    (      #
 #          )\ )  *   ) )\ )    (      )\ )  ( /(   )\ ) )\ )   #
 #      (  (()/(` )  /((()/(    )\    (()/(  )\()) (()/((()/(   #
@@ -151,21 +151,21 @@ def main():
 #  | |_| || |__  | |  |   /   / _ \  | __| | (_) || |__ | |) | #
 #   \___/ |____| |_|  |_|_\  /_/ \_\ |_|    \___/ |____||___/  #
 #                                                              #
-"""                             
-    print("#" * banner_width)
-    print("#{0:^{1}}#".format("", banner_width - 2))
-    print("#{0:^{1}}#".format("Ultrafold ver. 1.1.1 - 5 June 2026", banner_width - 2))
-    print("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2))
-    print("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2))
-    print("#{0:^{1}}#".format("", banner_width - 2)) 
-    print("#{0:^{1}}#".format("starting job: " + args.safeName, banner_width - 2))
-    print("#{0:^{1}}#".format(time.strftime("%c"), banner_width - 2))
-    print("#{0:^{1}}#".format("", banner_width - 2))
-    print("#" * banner_width + "\n\n# Job Submitted with following attributes:")
-    print(args, "\n")
+""")                             
+    print(("#" * banner_width))
+    print(("#{0:^{1}}#".format("", banner_width - 2)))
+    print(("#{0:^{1}}#".format("Ultrafold ver. 2.0.0 - 5 June 2026", banner_width - 2)))
+    print(("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2)))
+    print(("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2)))
+    print(("#{0:^{1}}#".format("", banner_width - 2))) 
+    print(("#{0:^{1}}#".format("starting job: " + args.safeName, banner_width - 2)))
+    print(("#{0:^{1}}#".format(time.strftime("%c"), banner_width - 2)))
+    print(("#{0:^{1}}#".format("", banner_width - 2)))
+    print(("#" * banner_width + "\n\n# Job Submitted with following attributes:"))
+    print((args, "\n"))
     
     # Run the partition function
-    print >> sys.stderr, "\nstarting Partition function calculation..."
+    print("\nstarting Partition function calculation...", file=sys.stderr)
     partitionPairing = dotPlot()
     
     if not debug:
@@ -199,9 +199,9 @@ def main():
         dsConstraint[0].append(i)
         dsConstraint[1].append(j)
     
-    print "Checking partitionPairing attributes..."
-    print "Partition Pairing object type:", type(partitionPairing)
-    print "Self length value:", getattr(partitionPairing, 'length', 'length not defined')
+    print("Checking partitionPairing attributes...")
+    print("Partition Pairing object type:", type(partitionPairing))
+    print("Self length value:", getattr(partitionPairing, 'length', 'length not defined'))
 
     # Calculate Shannon entropy
     bpShannonEntropy = partitionPairing.calcShannon()
@@ -211,7 +211,7 @@ def main():
     writeSHAPE(bpShannonEntropy, shannonEntropyName)
     
     # Generate the folded structure model
-    print >> sys.stderr, "starting Fold..."
+    print("starting Fold...", file=sys.stderr)
     
     initialStructure = CT()
     if not debug:
@@ -234,7 +234,7 @@ def main():
         initialStructure.readCT(initialStructureFileName)
     
     # Write final files and figures
-    print >> sys.stderr, "drawing figures..."
+    print("drawing figures...", file=sys.stderr)
     
     # Add in former pk constraints
     pkPair = []
@@ -265,15 +265,15 @@ def main():
     ps_comb = "{0}/regions_{1}.ps".format(resultsDir, args.safeName)
     ps_write = open(ps_comb, "w")
     
-    if args.noPVclient:
+    if args.pvclient:
         try:
             import pvclient
         except:
-            print "PVclient failed to load"
+            print("PVclient failed to load")
     
     for i, j in lowSHAPEregions:
         # Define file names
-        print >> sys.stderr, i, j
+        print(i, j, file=sys.stderr)
         ct_name = "{2}/regions/region_{3}_{0:0>{maxChar}}_{1:0>{maxChar}}.ct".format(i, j, resultsDir, args.safeName, maxChar=maxChar)
         ps_name = "{2}/regions/region_{3}_{0:0>{maxChar}}_{1:0>{maxChar}}.ps".format(i, j, resultsDir, args.safeName, maxChar=maxChar)
         pvclient_name = "{2}/regions/region_{3}_{0:0>{maxChar}}_{1:0>{maxChar}}".format(i, j, resultsDir, args.safeName, maxChar=maxChar)
@@ -284,9 +284,9 @@ def main():
         x.writeCT(ct_name)
         
         # Print diagnostic information for debugging
-        print "CT region name:", x.name
-        print "Writing CT File:", ct_name
-        print "Structure Length:", len(x.seq)
+        print("CT region name:", x.name)
+        print("Writing CT File:", ct_name)
+        print("Structure Length:", len(x.seq))
         
         # Circle plotting functions
         tmpSHAPE = args.mapObj.origSHAPE[i-1:j]
@@ -294,8 +294,8 @@ def main():
         
         # Debugging: Sanity check before makeCircle
         print("Debugging before makeCircle call:")
-        print("- Length of structure for region:", len(x.pairList()))
-        print("- Start index:", i, "End index:", j)
+        print(("- Length of structure for region:", len(x.pairList())))
+        print(("- Start index:", i, "End index:", j))
         
         # File lines. A region with no base pairs makes the circle-plot sens/PPV
         # divide by zero (PyCircleCompareSF.makeCircle); guard it so one sparse
@@ -307,29 +307,29 @@ def main():
             ps_write.write(lines)
             w.close()
         except Exception as e:
-            print "Circle plot failed for region {0}-{1}: {2}".format(i, j, str(e))
+            print("Circle plot failed for region {0}-{1}: {2}".format(i, j, str(e)))
         
-        if args.noPVclient:
+        if args.pvclient:
             try:
                 pvclient.python_client(x, tmpSHAPE, i, pvclient_name)
             except:
-                print "Structure drawing failed Region {0}-{1}".format(i, j)
+                print("Structure drawing failed Region {0}-{1}".format(i, j))
     ps_write.close()
     
     runtime = "{0:.2f}".format(time.time() - startTime)
-    print "\n", "#" * 51
-    print "#{0:^49}#".format("job finished: " + args.safeName)
-    print "#{0:^49}#".format(time.strftime("%c"))
-    print "#{0:^49}#".format("Total Runtime: " + runtime + " sec.")
-    print "#" * 51
+    print("\n", "#" * 51)
+    print("#{0:^49}#".format("job finished: " + args.safeName))
+    print("#{0:^49}#".format(time.strftime("%c")))
+    print("#{0:^49}#".format("Total Runtime: " + runtime + " sec."))
+    print("#" * 51)
 
 def debug_print(message, **kwargs):
-    print("[DEBUG]:", message)
-    for key, value in kwargs.items():
-        print("  - {}: {}".format(key, value))
+    print(("[DEBUG]:", message))
+    for key, value in list(kwargs.items()):
+        print(("  - {}: {}".format(key, value)))
 
 def create_bpp2seq(mapObj, start, end, output_file):
-    print("Creating .bpp2seq file:", output_file)
+    print(("Creating .bpp2seq file:", output_file))
     try:
         # Indices for the window, always starting from 1
         indices = list(range(1, end - start + 2))  # Since range is inclusive of start, make sure it starts at 1
@@ -353,9 +353,9 @@ def create_bpp2seq(mapObj, start, end, output_file):
                 line = "{0}\t{1}\te1\t{2:.6f}\n".format(i, nucleotide, ev)
                 f.write(line)
     except Exception as e:
-        print("Error in bpp2seq creation:", str(e))
+        print(("Error in bpp2seq creation:", str(e)))
 
-    print("bpp2seq conversion completed:", output_file)
+    print(("bpp2seq conversion completed:", output_file))
 
 def convert_bpp2seq_to_pairprob(bps_file, pairprob_file):
     def find_max_position(bps_file):
@@ -408,10 +408,10 @@ def clean_db_file(db_file):
         with open(db_file, 'w') as outfile:
             outfile.writelines(lines)
         
-        print "Cleaned the first line from {0}".format(db_file)
+        print("Cleaned the first line from {0}".format(db_file))
 
     except Exception as e:
-        print "Error cleaning {0}: {1}".format(db_file, str(e))
+        print("Error cleaning {0}: {1}".format(db_file, str(e)))
 
 def convert_db_to_ct(db_file, ct_file):
     """Converts a cleaned dot-bracket file to CT format."""
@@ -419,9 +419,9 @@ def convert_db_to_ct(db_file, ct_file):
     try:
         # Use subprocess.call for Python 2.7 compatibility
         subprocess.call(['dot2ct', db_file, ct_file])
-        print "Converted {0} to {1}".format(db_file, ct_file)
+        print("Converted {0} to {1}".format(db_file, ct_file))
     except subprocess.CalledProcessError as e:
-        print "Error converting {0} to CT format: {1}".format(db_file, str(e))
+        print("Error converting {0} to CT format: {1}".format(db_file, str(e)))
 
 def ensembleRNA_splitPlot(dpObj, ctObj, pk=None, outFile="arcs.pdf"):
     
@@ -513,6 +513,9 @@ def _runShellCommand(cmd):
     """
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = process.communicate()
+    # communicate() returns bytes on Python 3; decode so callers print clean text
+    if err is not None and not isinstance(err, str):
+        err = err.decode('utf-8', 'replace')
     return (cmd, process.returncode, err)
 
 
@@ -542,7 +545,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
     """
     Generates folded RNA structures for various segments, resolving conflicts to build a consensus structure.
     """
-    print 'Using EternaFold for structure prediction\n'
+    print('Using EternaFold for structure prediction\n')
 
     dirname = "fold_" + prefix
     _freshDir(dirname)
@@ -592,10 +595,10 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
     # convert successful windows to CT only after the pool has fully drained
     for (foldCMD, returncode, err), (_cmd, db_filename, ct_filename) in zip(foldResults, jobQueue1):
         if returncode != 0:
-            print "Error executing command: ", foldCMD
-            print "Error details: ", err
+            print("Error executing command: ", foldCMD)
+            print("Error details: ", err)
         else:
-            print "Successfully executed command: ", foldCMD
+            print("Successfully executed command: ", foldCMD)
             convert_db_to_ct(db_filename, ct_filename)
 
     targetRNA = CT()
@@ -614,22 +617,22 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
     return masterModelStructure
     
 def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
-    print 'Using EternaFold for the partition function\n'
+    print('Using EternaFold for the partition function\n')
 
     dirname = "partition_" + prefix
     _freshDir(dirname)
-    print "Created directory:", dirname
+    print("Created directory:", dirname)
 
     rnaLength = len(mapObj.seq)
-    print "Initializing partition function calculation"
-    print "Expected length of the sequence:", len(mapObj.seq)
+    print("Initializing partition function calculation")
+    print("Expected length of the sequence:", len(mapObj.seq))
 
     jobQueue1 = []
 
     def addJobToQueue(cut_i, cut_j, fname):
-        print "Processing segment from {} to {}".format(cut_i, cut_j)
+        print("Processing segment from {} to {}".format(cut_i, cut_j))
         create_bpp2seq(mapObj, cut_i, cut_j, "{0}.bpp2seq".format(fname))
-        print "Generated files for:", fname
+        print("Generated files for:", fname)
 
         output_bps_file = "{0}/{1}.bps".format(dirname, fname)
         cutoff_value = "0.000001"
@@ -665,26 +668,26 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
     # run the partition commands concurrently (each window is independent); honors --np
     for cmd, returncode, err in _dispatchCommands(jobQueue1, nprocs):
         if returncode != 0:
-            print "Error executing command: ", cmd
-            print "Error details: ", err
+            print("Error executing command: ", cmd)
+            print("Error details: ", err)
         else:
-            print "Successfully executed command: ", cmd
+            print("Successfully executed command: ", cmd)
 
     bps_files = [f for f in os.listdir(dirname) if f.endswith('.bps')]
     if not bps_files:
-        print "No .bps files were generated. Something might have gone wrong during execution."
+        print("No .bps files were generated. Something might have gone wrong during execution.")
         return None
 
-    print "Generated .bps files:", bps_files
+    print("Generated .bps files:", bps_files)
 
     for bps_file in bps_files:
         bps_filepath = os.path.join(dirname, bps_file)
         dp_filepath = bps_filepath.replace('.bps', '.dp')
         convert_bpp2seq_to_pairprob(bps_filepath, dp_filepath)
-        print "Converted {} to {}".format(bps_file, dp_filepath)
+        print("Converted {} to {}".format(bps_file, dp_filepath))
 
     dpObject = mainAssemble(dirname, trim=300)
-    print "dpObject length initialized to:", getattr(dpObject, 'length', "No length attribute found")
+    print("dpObject length initialized to:", getattr(dpObject, 'length', "No length attribute found"))
     assert dpObject.length is not None, "dpObject length should not be None"
 
     return dpObject
@@ -701,7 +704,7 @@ def generateAndRunFold_rnastructure(mapObj, usedms, constraints, dsConstraints, 
     constrain-and-refold loop the EternaFold engine cannot express
     (issues #6/#7/#8). Reuses the shared windowing + MasterModel consensus.
     """
-    print 'Using RNAstructure (Fold) for structure prediction\n'
+    print('Using RNAstructure (Fold) for structure prediction\n')
 
     dirname = "fold_" + prefix
     _freshDir(dirname)
@@ -729,10 +732,10 @@ def generateAndRunFold_rnastructure(mapObj, usedms, constraints, dsConstraints, 
 
     for cmd, returncode, err in _dispatchCommands(jobQueue1, nprocs):
         if returncode != 0:
-            print "Error executing command: ", cmd
-            print "Error details: ", err
+            print("Error executing command: ", cmd)
+            print("Error details: ", err)
         else:
-            print "Successfully executed command: ", cmd
+            print("Successfully executed command: ", cmd)
 
     targetRNA = CT()
     targetRNA.pair2CT([], "".join(mapObj.seq))
@@ -752,7 +755,7 @@ def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize
     Adds explicit 5'/3' end windows (as upstream SuperFold does), which also
     avoids the partition 3' coverage gap of the EternaFold path (issue #5).
     """
-    print 'Using RNAstructure (partition) for the partition function\n'
+    print('Using RNAstructure (partition) for the partition function\n')
 
     dirname = "partition_" + prefix
     _freshDir(dirname)
@@ -784,16 +787,16 @@ def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize
     # run all partition jobs, then convert each .pfs to a .dp via ProbabilityPlot
     for cmd, returncode, err in _dispatchCommands(partJobs, nprocs):
         if returncode != 0:
-            print "Error executing command: ", cmd
-            print "Error details: ", err
+            print("Error executing command: ", cmd)
+            print("Error details: ", err)
         else:
-            print "Successfully executed command: ", cmd
+            print("Successfully executed command: ", cmd)
     for cmd, returncode, err in _dispatchCommands(ppJobs, nprocs):
         if returncode != 0:
-            print "Error executing command: ", cmd
-            print "Error details: ", err
+            print("Error executing command: ", cmd)
+            print("Error details: ", err)
         else:
-            print "Successfully executed command: ", cmd
+            print("Successfully executed command: ", cmd)
 
     dpObject = mainAssemble(dirname, trim=300)
     return dpObject
@@ -822,8 +825,8 @@ def runCheck(engine='eternafold'):
 
     if missing:
         for each in missing:
-            print "Program {0} not found in the path".format(each)
-        print "...exiting"
+            print("Program {0} not found in the path".format(each))
+        print("...exiting")
         sys.exit(1)
 
     # DATAPATH is required by BOTH engines: RNAstructure's Fold/partition obviously,
@@ -832,8 +835,8 @@ def runCheck(engine='eternafold'):
         datapath = os.environ.get("DATAPATH")
         os.listdir(datapath)
     except:
-        print "DATAPATH is not set (needed by dot2ct / RNAstructure)"
-        print "...exiting"
+        print("DATAPATH is not set (needed by dot2ct / RNAstructure)")
+        print("...exiting")
         sys.exit(1)
 
 
@@ -842,13 +845,13 @@ def parseArgs():
     def parseTXT(fIN):
         data = {}
         lineNum = 0
-        for line in open(fIN, "rU").readlines():
+        for line in open(fIN, "r").readlines():
             x = line.rstrip().split()
             
             try:
-                x = map(int,x)
+                x = list(map(int,x))
             except:
-                print "Unexpected character in {0}...exiting".format(fIN)
+                print("Unexpected character in {0}...exiting".format(fIN))
                 return 0
             
             # initialize an array obj for the first line
@@ -921,7 +924,7 @@ def parseArgs():
             out.append(np.exp( (g-intercept) / slope ) -1.0)
         return out
 
-    arg = argparse.ArgumentParser(description="SuperFold takes a windowing approach to break up the folding of large RNAs. Dividing the folding of a large RNA into smaller segments allows modern multi-core workstations to model RNA structures in a modest amount of clock-time. See README file for further details and file descriptions", epilog="SuperFold v1.0 by Gregg Rice ( gmr@unc.edu )")
+    arg = argparse.ArgumentParser(description="UltraFold takes a windowing approach to break up the folding of large RNAs. Dividing the folding of a large RNA into smaller segments allows modern multi-core workstations to model RNA structures in a modest amount of clock-time. See README file for further details and file descriptions", epilog="UltraFold by George Stephenson - adaptation of SuperFold by Greggory M. Rice (gmr@unc.edu)")
     arg.add_argument('profileFile', type=str, help='Input profile.txt file for conversion to .bpp2seq')
     arg.add_argument('--DMS', action='store_true', default=False, help='Using DMS probing data generated by ShapeMapper 2.2 with --dms flag')
     arg.add_argument('--ssRegion', type=str, help='file containing forced single stranded regions')
@@ -937,7 +940,15 @@ def parseArgs():
     arg.add_argument('--foldWindowSize',type=int,default=3000, help='length of the Fold window size, default:3000')
     arg.add_argument('--foldStepSize',type=int,default=300, help='spacing between Fold windows, default:300')
     arg.add_argument('--maxPairingDist', type=int, default=600, help='Maximum pairing distance for partition and Fold, default:600')
-    arg.add_argument('--noPVclient', action='store_false', help="Don't draw secondary structures using PVclient")
+    # PVclient structure drawing is OFF by default (it needs httplib2 + a reachable
+    # PseudoViewer server). --pvclient opts in; --noPVclient is kept as a deprecated
+    # alias so existing commands keep working. (v1.x had this inverted: drawing was on
+    # by default and --noPVclient disabled it.)
+    arg.add_argument('--pvclient', dest='pvclient', action='store_true', default=False,
+                     help="Draw secondary structures via the PVclient PseudoViewer web service "
+                          "(off by default; requires httplib2 and a reachable PseudoViewer server)")
+    arg.add_argument('--noPVclient', dest='pvclient', action='store_false',
+                     help="(deprecated; PVclient is off by default) do not draw PVclient structures")
     arg.add_argument('--engine', type=str, default='eternafold', choices=['eternafold', 'rnastructure'],
                      help="folding/partition engine. 'eternafold' (default): SHAPE/DMS as soft learned "
                           "evidence via contrafold. 'rnastructure': Fold/partition with native -sh/-dmsnt "
@@ -983,7 +994,7 @@ def parseArgs():
         if ds == 0:
             sys.exit()
         if len(ds[0]) != len(ds[1]):
-            print "pkRegion file incorrectly formatted...exiting"
+            print("pkRegion file incorrectly formatted...exiting")
             sys.exit()
     except:
         if o.pkRegion is None: ds = {0:[], 1:[]}
@@ -997,15 +1008,15 @@ def parseArgs():
     
     # Use the correct attribute ('profileFile') instead of 'mapFile'
     m = hashlib.md5()
-    m.update(str(o.profileFile))
-    m.update(str(o.DMS))
-    m.update(str(o.ssRegion))
-    m.update(str(o.pkRegion))
-    m.update(str(o.differentialFile))
-    m.update(str(o.foldWindowSize))
-    m.update(str(o.partitionWindowSize))
-    m.update(str(o.maxPairingDist))
-    m.update(str(o.partitionStepSize))
+    m.update(str(o.profileFile).encode())
+    m.update(str(o.DMS).encode())
+    m.update(str(o.ssRegion).encode())
+    m.update(str(o.pkRegion).encode())
+    m.update(str(o.differentialFile).encode())
+    m.update(str(o.foldWindowSize).encode())
+    m.update(str(o.partitionWindowSize).encode())
+    m.update(str(o.maxPairingDist).encode())
+    m.update(str(o.partitionStepSize).encode())
     
     o.safeName = o.profileFile.split('.')[0] + "_" + m.hexdigest()[:4]
 
@@ -1014,16 +1025,16 @@ def parseArgs():
 
 def convertProfileToShapeMap(profileFile):
     # Load the map file considering no headers, so just plain reading
-    profileData = pd.read_csv(profileFile, sep='\s+', header=None, names=['Position', 'Norm_profile', 'Std_err', 'Sequence'])
+    profileData = pd.read_csv(profileFile, sep=r'\s+', header=None, names=['Position', 'Norm_profile', 'Std_err', 'Sequence'])
 
     # Debugging: Print the column names to verify they are read correctly
-    print("Columns available in profile data: ", profileData.columns.tolist())
+    print(("Columns available in profile data: ", profileData.columns.tolist()))
 
     mapObj = shapeMAP(None)
-    mapObj.ntNum = map(int, profileData['Position'].tolist())
+    mapObj.ntNum = list(map(int, profileData['Position'].tolist()))
     mapObj.seq = list(profileData['Sequence'].apply(lambda x: x.upper().replace('T', 'U')))
-    mapObj.shape = map(float, profileData['Norm_profile'].tolist())
-    mapObj.stdErr = map(float, profileData['Std_err'].tolist())
+    mapObj.shape = list(map(float, profileData['Norm_profile'].tolist()))
+    mapObj.stdErr = list(map(float, profileData['Std_err'].tolist()))
 
     return mapObj
 
@@ -1094,20 +1105,20 @@ def genFiles(mapObj, ssConstraints, dsConstraints, ntStart, ntEnd, fName):
     
 
 def mainAssemble(folderPath, trim=300):
-    print "Assembling dotPlot objects from folder:", folderPath
+    print("Assembling dotPlot objects from folder:", folderPath)
 
     targetDP = {}
     dp_files = sorted([f for f in os.listdir(folderPath) if f.endswith('.dp')])
 
     if not dp_files:
-        print "No .dp files found in directory:", folderPath
+        print("No .dp files found in directory:", folderPath)
         return dotPlot()  # Assuming the dotPlot can be initialized without arguments
 
     numFiles = len(dp_files)
-    print "Number of .dp files found:", numFiles
+    print("Number of .dp files found:", numFiles)
 
     for num, dpFileName in enumerate(dp_files, start=1):
-        print "Reading file {}/{}: {}".format(num, numFiles, dpFileName)
+        print("Reading file {}/{}: {}".format(num, numFiles, dpFileName))
         dp = dotPlot(os.path.join(folderPath, dpFileName))
 
         start = int(dpFileName.split("_")[-2])
@@ -1115,7 +1126,7 @@ def mainAssemble(folderPath, trim=300):
         targetDP[(start, end)] = dp
 
     if not targetDP:
-        print "Error: No valid dp files were loaded."
+        print("Error: No valid dp files were loaded.")
         return dotPlot()  # Assuming the dotPlot can be initialized without arguments
 
     # Single window spans the whole RNA (1..rnaLength); trimming/merging it would
@@ -1123,12 +1134,12 @@ def mainAssemble(folderPath, trim=300):
     # SuperFold guard lost here). Reachable for any RNA shorter than one window
     # (e.g. partitionWindowSize 1200 -> any RNA < ~1400 nt).
     if len(targetDP) == 1:
-        return targetDP[targetDP.keys()[0]]
+        return targetDP[list(targetDP.keys())[0]]
     
-    firstDP = min(targetDP.keys(), key=lambda x: x[0])[0]
-    lastDP = max(targetDP.keys(), key=lambda x: x[1])[1]
-    print "First DP start:", firstDP
-    print "Last DP end:", lastDP
+    firstDP = min(list(targetDP.keys()), key=lambda x: x[0])[0]
+    lastDP = max(list(targetDP.keys()), key=lambda x: x[1])[1]
+    print("First DP start:", firstDP)
+    print("Last DP end:", lastDP)
 
     # Initialize the dotPlot without any unspecified arguments
     finalDP = dotPlot()  # Assume simple initialization, check class definition if different
@@ -1137,16 +1148,16 @@ def mainAssemble(folderPath, trim=300):
     if hasattr(finalDP, 'length'):
         finalDP.length = lastDP
     else:
-        print "Warning: finalDP object does not have a 'length' attribute."
+        print("Warning: finalDP object does not have a 'length' attribute.")
 
-    print "Initialized finalDP with expected length:", lastDP
+    print("Initialized finalDP with expected length:", lastDP)
     
     coverage = []
 
-    print "Trimming and resorting..."
+    print("Trimming and resorting...")
     
-    for dpKey in targetDP.keys():
-        print "Processing window from {} to {}".format(*dpKey)
+    for dpKey in list(targetDP.keys()):
+        print("Processing window from {} to {}".format(*dpKey))
         dp = targetDP[dpKey]
         
         if dpKey[0] == firstDP:
@@ -1166,10 +1177,10 @@ def mainAssemble(folderPath, trim=300):
         finalDP.dp['j'] = np.append(finalDP.dp['j'], dp.dp['j'])
         finalDP.dp['logBP'] = np.append(finalDP.dp['logBP'], dp.dp['logBP'])
 
-    print "Coverage details:", coverage
+    print("Coverage details:", coverage)
     
     finalDP = concatonateDP(finalDP, coverage)
-    print "Assembly complete. Final coverage reported."
+    print("Assembly complete. Final coverage reported.")
     return finalDP
 
 
@@ -1217,7 +1228,7 @@ def concatonateDP(dpObj, coverage):
     oldFilter = np.zeros_like(dp['logBP'])
     dp['logBP'] = 10**( -dp['logBP'])
     
-    print "merging dotplots..."
+    print("merging dotplots...")
     for i,j in pairs:
         i = int(i)
         j = int(j)
@@ -1260,7 +1271,7 @@ def concatonateDP(dpObj, coverage):
             oldFilter = np.zeros_like(dp['logBP'])
             #print n, len(dp['logBP'])
     
-    print "DONE!"
+    print("DONE!")
     
     
     outObj.dp['logBP'] = -np.log10(outObj.dp['logBP'])
@@ -1348,14 +1359,14 @@ def MasterModel_findOverlapPairs(ctObjectList, baseCount):
     overlap_threshold = 0.5
     outpairs = {}
 
-    for key in bpairs.keys():
+    for key in list(bpairs.keys()):
         i, j = key
         min_base_count = min(baseCount[i - 1], baseCount[j - 1])
         if min_base_count > 0 and (bpairs[key] / float(min_base_count)) > overlap_threshold:
             outpairs[key] = bpairs[key]
 
     debug_print("Completed overlap pair analysis", outpairs_found=len(outpairs))
-    return outpairs.keys()
+    return list(outpairs.keys())
 
 ############################
 # SHANNON SHAPE SEARCH FUNCTIONS
@@ -1373,7 +1384,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
             if curr != prev:
                 transitions.append((i, curr))
                 prev = curr
-        print("[DEBUG] Transitions found:", transitions)
+        print(("[DEBUG] Transitions found:", transitions))
         return transitions
 
     def cullTransitions(transitions, minLength):
@@ -1388,12 +1399,12 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
                 continue
             if distance < minLength:
                 skip = True
-                print("[DEBUG] Culling transition at index", i, 
-                      "due to minimum length requirement. Distance:", distance)
+                print(("[DEBUG] Culling transition at index", i, 
+                      "due to minimum length requirement. Distance:", distance))
                 continue
             culled.append(transitions[i])
         culled.append(transitions[-1])
-        print("[DEBUG] Culled Transitions:", culled)
+        print(("[DEBUG] Culled Transitions:", culled))
         return culled
 
     def selectCutsites(trans1, trans2, seqLength, minlength=40):
@@ -1412,7 +1423,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
                         addnums = abs(j[1])
                         if not high:
                             addnums = abs(1 - j[1])
-            print("[DEBUG] Generated stretch list for high={}: {}".format(high, addList))
+            print(("[DEBUG] Generated stretch list for high={}: {}".format(high, addList)))
             return addList
         
         t1 = np.array(genStretch(trans1, seqLength, high=False))
@@ -1421,7 +1432,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
         combined = (t1 * t2) > 0
         transitions = cullTransitions(findTransitions(combined, 0.5), minlength)
         culled_combined = genStretch(transitions, seqLength)
-        print("[DEBUG] Final combined cutsites derived:", culled_combined)
+        print(("[DEBUG] Final combined cutsites derived:", culled_combined))
         
         return culled_combined
 
@@ -1438,7 +1449,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
             out[i] = float(out[degree])
         for i in range(len(dataIn) - degree, len(dataIn)):
             out[i] = float(out[len(dataIn) - degree - 1])
-        print("[DEBUG] Moving window results:", out)
+        print(("[DEBUG] Moving window results:", out))
         return out
 
     print("[INIT] Starting mainShannonFunc")
@@ -1458,7 +1469,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
     a = np.array(selectCutsites(shape_culled, shannon_culled, len(shape)))
     b = a > 0
 
-    print "####### shannonShapeTransitions #######"
+    print("####### shannonShapeTransitions #######")
     regions = findTransitions(b, 0.5)
 
     x = np.linspace(0, len(shape), len(shape))
@@ -1492,7 +1503,7 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
     plt.ylim(0, 2)
     plt.xlim(0, 5000)
 
-    lowShannonLowSHAPE = plt.fill_between(range(len(b)), b * 3.0, 0, alpha=0.2, color='blue', label="Low Shannon low SHAPE")
+    lowShannonLowSHAPE = plt.fill_between(list(range(len(b))), b * 3.0, 0, alpha=0.2, color='blue', label="Low Shannon low SHAPE")
     
     plt.plot(x, np.median(shannon) * np.ones(len(x)), color='y')
     shannonPlot = plt.fill_between(x, shannon, np.zeros_like(shannon), facecolor='brown', interpolate=True, label="Shannon")
@@ -1535,19 +1546,19 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
             regionPair.append([regions[-1][0], len(shape)])
 
     except Exception as e:
-        print "[ERROR] An exception occurred while defining regions:", str(e)
+        print("[ERROR] An exception occurred while defining regions:", str(e))
         regionPair.append([1, len(shape)])
 
-    print "Unexpanded regions:"
+    print("Unexpanded regions:")
     for i, j in regionPair:
-        print i, "-", j
+        print(i, "-", j)
 
     allPair = ctStruct.pairList()
     expandedRegion = []
 
     for i, j in regionPair:
         new_i, new_j = i, j
-        print "[EXPAND] Expanding region:", i, "-", j
+        print("[EXPAND] Expanding region:", i, "-", j)
 
         for k, l in allPair:
             if k < i and l > i:
@@ -1560,13 +1571,13 @@ def mainShannonFunc(shapeReact, shannonEntropy, saveName, ctStruct):
                     new_i = k
                 if l > new_j:
                     new_j = l
-            print "[DEBUG] Checked pair ({}, {}). Updated range: {}-{}".format(k, l, new_i, new_j)
+            print("[DEBUG] Checked pair ({}, {}). Updated range: {}-{}".format(k, l, new_i, new_j))
 
         expandedRegion.append((new_i, new_j))
 
-    print "Expanded regions:"
+    print("Expanded regions:")
     for i, j in expandedRegion:
-        print i, "-", j
+        print(i, "-", j)
 
     return expandedRegion
     

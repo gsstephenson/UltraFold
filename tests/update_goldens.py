@@ -26,14 +26,14 @@ import _harness as H
 def regenerate(engine):
     avail = H.eternafold_available() if engine == "eternafold" else H.rnastructure_available()
     if not avail:
-        print "[skip] {0}: required tools / DATAPATH not available".format(engine)
+        print("[skip] {0}: required tools / DATAPATH not available".format(engine))
         return False
     workdir = tempfile.mkdtemp(prefix="uf_golden_{0}_".format(engine))
-    print "[run ] {0} engine in {1} ...".format(engine, workdir)
+    print("[run ] {0} engine in {1} ...".format(engine, workdir))
     rc, out = H.run_pipeline(engine, nprocs=4, workdir=workdir)
     if rc != 0 or any(out[k] is None for k, _ in H.MERGED_PATTERNS):
-        print "[FAIL] {0}: pipeline rc={1}, outputs={2} (see {3}/run.log)".format(
-            engine, rc, out, workdir)
+        print("[FAIL] {0}: pipeline rc={1}, outputs={2} (see {3}/run.log)".format(
+            engine, rc, out, workdir))
         return False
     dest = os.path.join(H.GOLDEN_DIR, engine)
     if os.path.exists(dest):
@@ -42,7 +42,7 @@ def regenerate(engine):
     for key, _pat in H.MERGED_PATTERNS:
         shutil.copy(out[key], H.golden_path(engine, key))
     shutil.rmtree(workdir)
-    print "[ ok ] {0}: goldens written to {1}".format(engine, dest)
+    print("[ ok ] {0}: goldens written to {1}".format(engine, dest))
     return True
 
 

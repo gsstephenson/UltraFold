@@ -1,18 +1,23 @@
-# UltraFold v1.0.0 runtime dependencies
+# UltraFold v2.0.0 runtime dependencies (Python 3).
 #
-# NOTE: v1.0.0 runs on **Python 2.7**. Install these with a Python 2.7 pip,
-# e.g. inside a Python 2.7 conda environment. The version ceilings below are
-# the last releases that support Python 2.7.
+# These are the exact versions the v2.0.0 port was validated against — it
+# reproduces the v1.1.1 reference numerics within float-repr precision on this
+# stack. (Conservative on purpose; modernizing to current numpy/pandas/matplotlib
+# is a planned, separately-validated v2.x step — see ROADMAP.md.)
+#
+# NOTE: v1.x is Python 2.7 (see the v1.x tags). v2.0.0 requires Python 3 (>=3.6).
 
-numpy<1.17          # last numpy with Python 2.7 support
-pandas<0.25         # last pandas with Python 2.7 support
-matplotlib<3.0      # matplotlib 2.x supports Python 2.7
+numpy==1.16.6
+pandas==0.24.2
+matplotlib==2.2.3
+scipy==1.2.1
 
-# Optional: only required for PVclient secondary-structure drawing
-# (skip with --noPVclient if you do not need it)
-httplib2
+# Optional: only required for PVclient (PseudoViewer) secondary-structure drawing,
+# which is OFF by default in v2 (enable with --pvclient).
+# httplib2
 
 # --- External (non-pip) tools also required on PATH ---
-#   RNAstructure: Fold, partition, ProbabilityPlot, dot2ct
-#   EternaFold:   contrafold / eternafold
+#   EternaFold:   contrafold            (default engine)
+#   RNAstructure: dot2ct                (both engines), and Fold/partition/ProbabilityPlot
+#                 (only for --engine rnastructure); set DATAPATH to its data_tables.
 # See docs/external_tools.md

@@ -209,7 +209,7 @@ def genCorrelString(correlDat):
     line = ""
     count = 0
     length = len(correlDat['i'])
-    for num in xrange(length):
+    for num in range(length):
         if correlDat['correl'][num] > 0.035:
             line += '[{0} {1} 0.00 0.50 0.00 {2}]\n'.format(correlDat['i'][num],correlDat['j'][num],0)
             count += 1
@@ -558,7 +558,7 @@ showpage
 
 if __name__ == '__main__':
     if len(sys.argv) <=3:
-        print 'Usage: CircleDMS.py structure.ct correlData.txt output.ps'
+        print('Usage: CircleDMS.py structure.ct correlData.txt output.ps')
         sys.exit()
     ct_pred = CT(sys.argv[1])
     

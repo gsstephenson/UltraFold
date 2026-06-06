@@ -2,8 +2,8 @@
 
 > Windowed RNA secondary-structure modeling for large RNAs from SHAPE/DMS chemical-probing data — a faster, refined evolution of SuperFold.
 
-![status: v1.0.0](https://img.shields.io/badge/version-1.0.0-blue)
-![python: 2.7](https://img.shields.io/badge/python-2.7-yellow)
+![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-blue)
+![python: 3](https://img.shields.io/badge/python-3-blue)
 ![license: GPL v3](https://img.shields.io/badge/license-GPLv3-green)
 
 UltraFold predicts the secondary structure of **large RNAs** by breaking the
@@ -16,19 +16,21 @@ poorly-determined regions, and renders arc and circle structure plots.
 
 ---
 
-## ⚠️ Version 1.0.0 — read this first
+## ⚠️ Versions — read this first
 
-**v1.0.0 is Python 2.7 code.** It is published *faithfully*, as the exact
-reference implementation used to generate published results, so that it can be
-**cited and reproduced** without ambiguity. No algorithmic changes have been
-made during packaging.
+- **v2.0.0 (current) — Python 3.** The Python 3 port of the windowed-consensus
+  pipeline. It reproduces the v1.1.1 numerics within float-repr precision
+  (validated against golden reference outputs) and adds an optional RNAstructure
+  engine alongside EternaFold. Requires Python 3.
+- **v1.x — Python 2.7.** The original reference line. **v1.0.0 is the frozen,
+  citable reference** used to generate published results, kept faithful and
+  unchanged. **If you are citing the method in a paper, cite v1.0.0** (see
+  [CITATION.cff](CITATION.cff)); the `v1.0.0` git tag is immutable.
 
-This release is, however, deliberately structured for future work. Python 3
-porting, dependency modernization, GPU acceleration, and packaging are all
-planned — see **[ROADMAP.md](ROADMAP.md)**.
+See [CHANGELOG.md](CHANGELOG.md) and [ROADMAP.md](ROADMAP.md) for the full history.
 
-If you are citing the method used in a paper, cite **v1.0.0** (see
-[CITATION.cff](CITATION.cff)).
+> **Doc status:** parts of this README below still describe the v1.x (Python 2.7)
+> workflow; a full v2.0.0 documentation pass is in progress.
 
 ---
 
@@ -183,10 +185,9 @@ See [examples/ESR1/README.md](examples/ESR1/README.md).
 
 ```
 UltraFold/
-├── src/ultrafold/        # the v1.0.0 reference implementation (Python 2.7)
+├── src/ultrafold/        # the pipeline (v2.x: Python 3 · v1.x: Python 2.7)
 │   ├── Ultrafold.py          # main pipeline / entry point
 │   ├── RNAtools.py           # CT / dot-plot / SHAPE I/O
-│   ├── batchSubmit.py        # parallel job dispatch
 │   ├── drawArcRibbons_simple.py  # arc-diagram plotting
 │   ├── PyCircleCompareSF.py  # circle-plot comparison
 │   └── pvclient.py           # PVclient structure drawing (optional)

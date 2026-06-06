@@ -3,7 +3,25 @@
 All notable changes to UltraFold are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0] — 2026-06-05
+
+**Python 3 port.** UltraFold now runs on Python 3; the v1.x line stays Python 2.7, frozen at the
+`v1.0.0` tag for citation. Validated to reproduce the v1.1.1 reference within float-repr precision:
+`merged.ct` is byte-identical, and `merged.dp` / `shannon` are numerically identical to ~5e-12 (py3
+simply prints more float digits) — verified on both engines against the v1.1.1 goldens.
+
+### Changed
+- **Ported all modules to Python 3** — `print()` functions, `range` / `list(map(...))`, `hashlib`
+  byte-encoding, subprocess text/bytes handling, `open('r')`. The silent `np.array(map(...))`
+  corruption hazard (0-d object array) is resolved (now `np.array(list(map(...)))`).
+- **PVclient drawing is OFF by default and the flag is fixed.** Use `--pvclient` to enable;
+  `--noPVclient` is retained as a deprecated alias. v1.x had this inverted (drawing on by default,
+  `--noPVclient` to disable). **CLI behavior change.**
+- Program self-identification updated to UltraFold (SuperFold lineage credit retained).
+
+### Removed
+- The unused `batchSubmit.py` module (parallel dispatch is handled in-pipeline; lineage attribution
+  remains in CITATION.cff and the README).
 
 ### Added
 - **Regression test harness + CI (#11).** Pure-Python unit tests (RNAtools `CT`/`dotPlot`, the
@@ -128,6 +146,7 @@ implementation** of UltraFold.
 
 See [ROADMAP.md](ROADMAP.md) for planned Python 3, dependency, and GPU work.
 
+[2.0.0]: https://github.com/gsstephenson/UltraFold/releases/tag/v2.0.0
 [1.1.1]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.1.0
 [1.0.1]: https://github.com/gsstephenson/UltraFold/releases/tag/v1.0.1
