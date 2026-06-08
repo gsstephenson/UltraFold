@@ -3,6 +3,41 @@
 All notable changes to UltraFold are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] — 2026-06-08
+
+**Reproducible, honest engine selection.** Makes the two-engine design trustworthy: output naming can
+no longer collide across engines, the EternaFold parameters are configurable, the previously-inert
+knobs either work or say so, and every run records how it was produced. All changes verified
+**byte-identical** to the v2.0.0 golden outputs on both engines (default runs); 12 unit tests pass.
+
+### Fixed
+- **Reproducible output naming (#12).** The output-directory signature (`safeName`) now hashes the
+  input file **contents** (not just its path string) and the **complete** output-affecting parameter
+  set — including `--engine`. Previously an EternaFold run and an RNAstructure run on the same input
+  produced the same `safeName` and silently overwrote each other's `results/merged_*` files.
+
+### Added
+- **Configurable EternaFold parameters (#9).** `--eternafoldParams PATH` replaces the hardcoded
+  parameter-file path (now a single source of truth), and `--kappa FLOAT` exposes EternaFold's
+  chemical-mapping evidence weight (`contrafold --kappa`; its default is 1.0, and leaving `--kappa`
+  unset keeps that default, so existing results are unchanged). `runCheck` now verifies the EternaFold
+  parameter file exists.
+- **Run provenance manifest.** Every run writes `results/run_manifest_<safeName>.txt` recording the
+  engine, the full parameter set, and md5 checksums of the input profile and the EternaFold parameter
+  file — so any result traces back to exactly how it was produced. (Additive; does not affect the
+  merged outputs.)
+
+### Changed
+- **`--trimInterior` is now wired (#7).** It was parsed but ignored; it now controls the
+  partition-window interior trim on both engines (default 300 → output unchanged).
+- **Inert-flag warnings (#7).** Passing RNAstructure-only flags (`--ssRegion`, `--pkRegion`,
+  `--maxPairingDist`, `--SHAPEslope`/`--SHAPEintercept`) under `--engine eternafold` now prints a
+  warning, since EternaFold's learned evidence model ignores them.
+
+### Removed
+- The dead `debug` toggle and its branches in `main()` (#13) — behavior-preserving; the `debug_print`
+  logging helper is unchanged.
+
 ## [2.0.0] — 2026-06-06
 
 **Python 3 port.** UltraFold now runs on Python 3; the v1.x line stays Python 2.7, frozen at the

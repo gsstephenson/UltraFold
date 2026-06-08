@@ -105,8 +105,6 @@ class shapeMAP:
 
 def main():
     
-    debug = False
-    
     # Start the stopwatch
     startTime = time.time()
     
@@ -114,7 +112,7 @@ def main():
     args = parseArgs()
 
     # Check that the external tools the chosen engine needs are available
-    runCheck(args.engine)
+    runCheck(args.engine, args.eternafoldParams)
 
     # Set the results directory paths
     currDir = os.getcwd()
@@ -135,6 +133,15 @@ def main():
     except:
         pass
 
+    # write run provenance next to the outputs (engine, params, input/params checksums)
+    try:
+        manifestPath = os.path.join(resultsDir, "run_manifest_{0}.txt".format(args.safeName))
+        _writeRunManifest(args, manifestPath)
+        sys.stderr.write("UltraFold run: engine={0}  input={1}  (provenance: {2})\n".format(
+            args.engine, os.path.basename(args.profileFile), manifestPath))
+    except Exception as e:
+        sys.stderr.write("WARNING: could not write run manifest: {0}\n".format(e))
+
     # Set location of the logfile
     logFile = open("{0}/log_{1}.txt".format(resultsDir,resultsFile), "a")
     sys.stdout = logFile
@@ -154,7 +161,7 @@ def main():
 """)                             
     print(("#" * banner_width))
     print(("#{0:^{1}}#".format("", banner_width - 2)))
-    print(("#{0:^{1}}#".format("Ultrafold ver. 2.0.0 - 6 June 2026", banner_width - 2)))
+    print(("#{0:^{1}}#".format("Ultrafold ver. {0} - 8 June 2026".format(UF_VERSION), banner_width - 2)))
     print(("#{0:^{1}}#".format("Adaptation of Superfold ver. 1.2 - 21 July 2023", banner_width - 2)))
     print(("#{0:^{1}}#".format("Developed by George Stephenson", banner_width - 2)))
     print(("#{0:^{1}}#".format("", banner_width - 2))) 
@@ -168,30 +175,27 @@ def main():
     print("\nstarting Partition function calculation...", file=sys.stderr)
     partitionPairing = dotPlot()
     
-    if not debug:
-        if args.engine == 'rnastructure':
-            partitionPairing = generateAndRunPartition_rnastructure(args.mapObj, args.DMS, args.allConstraints,
-                                                    args.partitionWindowSize, args.partitionStepSize,
-                                                    args.safeName, args.SHAPEslope,
-                                                    args.SHAPEintercept, args.np,
-                                                    args.maxPairingDist)
-        else:
-            partitionPairing = generateAndRunPartition(args.mapObj, args.DMS, args.allConstraints,
-                                                    args.partitionWindowSize, args.partitionStepSize,
-                                                    args.safeName, args.SHAPEslope,
-                                                    args.SHAPEintercept, args.np,
-                                                    args.maxPairingDist)
+    if args.engine == 'rnastructure':
+        partitionPairing = generateAndRunPartition_rnastructure(args.mapObj, args.DMS, args.allConstraints,
+                                                args.partitionWindowSize, args.partitionStepSize,
+                                                args.safeName, args.SHAPEslope,
+                                                args.SHAPEintercept, args.np,
+                                                args.maxPairingDist,
+                                                args.trimInterior)
+    else:
+        partitionPairing = generateAndRunPartition(args.mapObj, args.DMS, args.allConstraints,
+                                                args.partitionWindowSize, args.partitionStepSize,
+                                                args.safeName, args.SHAPEslope,
+                                                args.SHAPEintercept, args.np,
+                                                args.maxPairingDist,
+                                                args.eternafoldParams, args.kappa,
+                                                args.trimInterior)
     
     # Write the partition function file
     partitionFileName = "{0}/merged_{1}.dp".format(resultsDir, args.safeName)
     
-    if not debug:
-        partitionPairing.writeDP(partitionFileName)
-    
-    # Debug line
-    if debug:
-        partitionPairing = dotPlot(partitionFileName)
-    
+    partitionPairing.writeDP(partitionFileName)
+
     # Get the 99% most probable pairs to use as constraints in folding
     probablePairs99 = partitionPairing.requireProb(0.004364805402450088).pairList()
     dsConstraint = {0: [], 1: []}
@@ -214,25 +218,20 @@ def main():
     print("starting Fold...", file=sys.stderr)
     
     initialStructure = CT()
-    if not debug:
-        if args.engine == 'rnastructure':
-            initialStructure = generateAndRunFold_rnastructure(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
-                                              args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
-                                              args.maxPairingDist)
-        else:
-            initialStructure = generateAndRunFold(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
-                                              args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
-                                              args.maxPairingDist)
+    if args.engine == 'rnastructure':
+        initialStructure = generateAndRunFold_rnastructure(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
+                                          args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
+                                          args.maxPairingDist)
+    else:
+        initialStructure = generateAndRunFold(args.mapObj, args.DMS, args.allConstraints, dsConstraint, args.foldWindowSize,
+                                          args.foldStepSize, args.safeName, args.SHAPEslope, args.SHAPEintercept, args.np,
+                                          args.maxPairingDist,
+                                          args.eternafoldParams, args.kappa)
     
     # Write the folded structure
     initialStructureFileName = "{0}/merged_{1}.ct".format(resultsDir, args.safeName)
-    if not debug:
-        initialStructure.writeCT(initialStructureFileName)
-    
-    # Debug
-    if debug:
-        initialStructure.readCT(initialStructureFileName)
-    
+    initialStructure.writeCT(initialStructureFileName)
+
     # Write final files and figures
     print("drawing figures...", file=sys.stderr)
     
@@ -541,7 +540,22 @@ def _dispatchCommands(commands, nprocs):
     return [_runShellCommand(c) for c in commands]
 
 
-def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
+UF_VERSION = "2.1.0"
+DEFAULT_ETERNAFOLD_PARAMS = '/opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1'
+
+
+def _contrafoldCmd(fname, eternafoldParams, kappa, tail):
+    """A ``contrafold predict`` command with a configurable params path and an
+    optional chemical-mapping weight (--kappa; contrafold's own default is 1.0).
+    ``tail`` is the already-formatted command suffix (a redirect or
+    '--posteriors CUTOFF OUT'). With the default params path and kappa unset the
+    string is identical to the previously hardcoded command."""
+    kappaArg = " --kappa {0}".format(kappa) if kappa is not None else ""
+    return ("contrafold predict {0}.bpp2seq --evidence --numdatasources 1{1} "
+            "--params {2} {3}").format(fname, kappaArg, eternafoldParams, tail)
+
+
+def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist, eternafoldParams=DEFAULT_ETERNAFOLD_PARAMS, kappa=None):
     """
     Generates folded RNA structures for various segments, resolving conflicts to build a consensus structure.
     """
@@ -560,7 +574,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
         fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, cut_i, cut_j)
         genFiles(mapObj, constraints, dsConstraints, cut_i, cut_j, fname)
 
-        foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 > {0}.db".format(fname)
+        foldCMD = _contrafoldCmd(fname, eternafoldParams, kappa, "> {0}.db".format(fname))
         jobQueue1.append((foldCMD, "{0}.db".format(fname), "{0}.ct".format(fname)))
     else:
         for i in range(1, rnaLength - windowSize, stepSize):
@@ -568,7 +582,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
             fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, cut_i, cut_j)
             genFiles(mapObj, constraints, dsConstraints, cut_i, cut_j, fname)
 
-            foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 > {0}.db".format(fname)
+            foldCMD = _contrafoldCmd(fname, eternafoldParams, kappa, "> {0}.db".format(fname))
             jobQueue1.append((foldCMD, "{0}.db".format(fname), "{0}.ct".format(fname)))
             debug_print("Queued job for fold generation", file_name=fname, cut_range=(cut_i, cut_j))
 
@@ -577,7 +591,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
             fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, 1, cut5prime_j)
             genFiles(mapObj, constraints, dsConstraints, 1, cut5prime_j, fname)
 
-            foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 > {0}.db".format(fname)
+            foldCMD = _contrafoldCmd(fname, eternafoldParams, kappa, "> {0}.db".format(fname))
             jobQueue1.append((foldCMD, "{0}.db".format(fname), "{0}.ct".format(fname)))
             debug_print("Queued 5' end job for fold generation", file_name=fname, cut_range=(1, cut5prime_j))
 
@@ -585,7 +599,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
             fname = "{0}/{1}_{2}_{3}".format(dirname, prefix, cut3prime_i, rnaLength)
             genFiles(mapObj, constraints, dsConstraints, cut3prime_i, rnaLength, fname)
 
-            foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 > {0}.db".format(fname)
+            foldCMD = _contrafoldCmd(fname, eternafoldParams, kappa, "> {0}.db".format(fname))
             jobQueue1.append((foldCMD, "{0}.db".format(fname), "{0}.ct".format(fname)))
             debug_print("Queued 3' end job for fold generation", file_name=fname, cut_range=(cut3prime_i, rnaLength))
 
@@ -616,7 +630,7 @@ def generateAndRunFold(mapObj, usedms, constraints, dsConstraints, windowSize, s
 
     return masterModelStructure
     
-def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
+def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist, eternafoldParams=DEFAULT_ETERNAFOLD_PARAMS, kappa=None, trimInterior=300):
     print('Using EternaFold for the partition function\n')
 
     dirname = "partition_" + prefix
@@ -641,7 +655,7 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
         # .bpp2seq file. Without it the partition posteriors (and therefore the merged dot
         # plot, the 99% constraint pairs, and the Shannon-entropy/region analysis) are
         # computed sequence-only. See issue #1.
-        foldCMD = "contrafold predict {0}.bpp2seq --evidence --numdatasources 1 --params /opt/EternaFold/parameters/EternaFoldParams_PLUS_POTENTIALS.v1 --posteriors {1} {2}".format(fname, cutoff_value, output_bps_file)
+        foldCMD = _contrafoldCmd(fname, eternafoldParams, kappa, "--posteriors {0} {1}".format(cutoff_value, output_bps_file))
         jobQueue1.append(foldCMD)
 
     if rnaLength - windowSize < 200:
@@ -686,7 +700,7 @@ def generateAndRunPartition(mapObj, usedms, constraints, windowSize, stepSize, p
         convert_bpp2seq_to_pairprob(bps_filepath, dp_filepath)
         print("Converted {} to {}".format(bps_file, dp_filepath))
 
-    dpObject = mainAssemble(dirname, trim=300)
+    dpObject = mainAssemble(dirname, trim=trimInterior)
     print("dpObject length initialized to:", getattr(dpObject, 'length', "No length attribute found"))
     assert dpObject.length is not None, "dpObject length should not be None"
 
@@ -746,7 +760,7 @@ def generateAndRunFold_rnastructure(mapObj, usedms, constraints, dsConstraints, 
     return masterModelStructure
 
 
-def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist):
+def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize, stepSize, prefix, shapeSlope, shapeIntercept, nprocs, maxDist, trimInterior=300):
     """RNAstructure (partition + ProbabilityPlot) engine path.
 
     Computes Boltzmann base-pairing probabilities with the SHAPE/DMS restraint
@@ -798,11 +812,11 @@ def generateAndRunPartition_rnastructure(mapObj, usedms, constraints, windowSize
         else:
             print("Successfully executed command: ", cmd)
 
-    dpObject = mainAssemble(dirname, trim=300)
+    dpObject = mainAssemble(dirname, trim=trimInterior)
     return dpObject
 
 
-def runCheck(engine='eternafold'):
+def runCheck(engine='eternafold', eternafoldParams=DEFAULT_ETERNAFOLD_PARAMS):
     """
     Check that the external command-line tools required by the SELECTED engine
     are callable, plus DATAPATH. The EternaFold path uses contrafold + dot2ct;
@@ -838,6 +852,94 @@ def runCheck(engine='eternafold'):
         print("DATAPATH is not set (needed by dot2ct / RNAstructure)")
         print("...exiting")
         sys.exit(1)
+
+    # the EternaFold path also needs its parameter file to exist
+    if engine != 'rnastructure' and not os.path.isfile(eternafoldParams):
+        print("EternaFold params file not found: {0}".format(eternafoldParams))
+        print("(set --eternafoldParams to your EternaFoldParams_PLUS_POTENTIALS.v1)")
+        print("...exiting")
+        sys.exit(1)
+
+
+def _runSignature(profileFile, params):
+    """Stable hash used to name a run's output directory.
+
+    Hashes the input file CONTENTS (so editing the input in place yields a new
+    name, rather than the old behaviour of hashing only the path string) plus
+    every output-affecting parameter, each separated by a NUL so distinct values
+    can't run together. The engine is included, so an EternaFold run and an
+    RNAstructure run on the same input no longer collide on the same output
+    files. Falls back to the path string if the file can't be read.
+    """
+    m = hashlib.md5()
+    try:
+        with open(profileFile, 'rb') as fh:
+            m.update(fh.read())
+    except (IOError, OSError):
+        m.update(str(profileFile).encode())
+    for p in params:
+        m.update(b"\x00")
+        m.update(str(p).encode())
+    return m.hexdigest()[:12]
+
+
+def _warnInertFlags(o):
+    """Warn when flags that only affect the RNAstructure engine are passed with
+    --engine eternafold, where they currently have no effect: EternaFold uses a
+    learned evidence model, so it cannot combine hard constraints with evidence,
+    has no max-pairing-distance, and ignores the SHAPE slope/intercept
+    pseudo-energy. Honest CLI feedback for issue #7."""
+    if o.engine != 'eternafold':
+        return
+    inert = []
+    if o.ssRegion is not None:
+        inert.append("--ssRegion")
+    if o.pkRegion is not None:
+        inert.append("--pkRegion")
+    if o.maxPairingDist != 600:
+        inert.append("--maxPairingDist")
+    if not o.differentialFile and (o.SHAPEslope != 1.8 or o.SHAPEintercept != -0.6):
+        inert.append("--SHAPEslope/--SHAPEintercept")
+    if inert:
+        sys.stderr.write(
+            "WARNING: {0} {1} no effect on the eternafold engine (EternaFold uses a "
+            "learned evidence model). Use --engine rnastructure for hard constraints, "
+            "max-pairing-distance, or SHAPE pseudo-energy.\n".format(
+                ", ".join(inert), "has" if len(inert) == 1 else "have"))
+
+
+def _writeRunManifest(args, path):
+    """Write full run provenance next to the outputs: the engine, every parameter,
+    and md5 checksums of the input profile and (for the eternafold engine) the
+    parameter file -- so any result can be traced to exactly how it was produced."""
+    def _md5(p):
+        try:
+            with open(p, 'rb') as fh:
+                return hashlib.md5(fh.read()).hexdigest()
+        except (IOError, OSError):
+            return "n/a"
+    lines = [
+        "UltraFold run manifest",
+        "version:  {0}".format(UF_VERSION),
+        "time:     {0}".format(time.strftime("%c")),
+        "engine:   {0}".format(args.engine),
+        "safeName: {0}".format(args.safeName),
+        "input:    {0}  (md5 {1})".format(args.profileFile, _md5(args.profileFile)),
+        "parameters:",
+        "  DMS={0}  np={1}".format(args.DMS, args.np),
+        "  partitionWindowSize={0}  partitionStepSize={1}".format(args.partitionWindowSize, args.partitionStepSize),
+        "  foldWindowSize={0}  foldStepSize={1}".format(args.foldWindowSize, args.foldStepSize),
+        "  maxPairingDist={0}  trimInterior={1}".format(args.maxPairingDist, args.trimInterior),
+        "  SHAPEslope={0}  SHAPEintercept={1}".format(args.SHAPEslope, args.SHAPEintercept),
+        "  ssRegion={0}  pkRegion={1}".format(args.ssRegion, args.pkRegion),
+        "  differentialFile={0}  differentialSlope={1}".format(args.differentialFile, args.differentialSlope),
+    ]
+    if args.engine == 'eternafold':
+        lines.append("  eternafoldParams={0}  (md5 {1})".format(args.eternafoldParams, _md5(args.eternafoldParams)))
+        lines.append("  kappa={0}".format("default(1.0)" if args.kappa is None else args.kappa))
+    with open(path, 'w') as fh:
+        fh.write("\n".join(lines) + "\n")
+    return path
 
 
 def parseArgs():
@@ -962,6 +1064,13 @@ def parseArgs():
                           "evidence via contrafold. 'rnastructure': Fold/partition with native -sh/-dmsnt "
                           "restraints, -md max-distance, and -C hard constraints (applies the user ss/pk "
                           "AND the 99-percent partition pairs). default:eternafold")
+    arg.add_argument('--eternafoldParams', type=str, default=DEFAULT_ETERNAFOLD_PARAMS,
+                     help='eternafold engine: path to the EternaFold parameter file '
+                          '(default: %(default)s)')
+    arg.add_argument('--kappa', type=float, default=None,
+                     help="eternafold engine: weight on the SHAPE/DMS chemical-mapping "
+                          "evidence (contrafold --kappa; contrafold's default is 1.0). "
+                          "Unset keeps that default.")
 
     o = arg.parse_args()
     
@@ -1014,19 +1123,20 @@ def parseArgs():
     allConst = ss[0] + ds[0] + ds[1]
     o.allConstraints = allConst
     
-    # Use the correct attribute ('profileFile') instead of 'mapFile'
-    m = hashlib.md5()
-    m.update(str(o.profileFile).encode())
-    m.update(str(o.DMS).encode())
-    m.update(str(o.ssRegion).encode())
-    m.update(str(o.pkRegion).encode())
-    m.update(str(o.differentialFile).encode())
-    m.update(str(o.foldWindowSize).encode())
-    m.update(str(o.partitionWindowSize).encode())
-    m.update(str(o.maxPairingDist).encode())
-    m.update(str(o.partitionStepSize).encode())
+    # Name the run's output dir by a stable signature of the input file CONTENTS
+    # plus every output-affecting parameter (engine included) -- see _runSignature.
     
-    o.safeName = o.profileFile.split('.')[0] + "_" + m.hexdigest()[:4]
+    o.safeName = o.profileFile.split('.')[0] + "_" + _runSignature(o.profileFile, [
+        o.engine, o.DMS, o.ssRegion, o.pkRegion,
+        o.differentialFile, o.differentialSlope,
+        o.foldWindowSize, o.foldStepSize,
+        o.partitionWindowSize, o.partitionStepSize,
+        o.maxPairingDist, o.trimInterior,
+        o.SHAPEslope, o.SHAPEintercept,
+        o.eternafoldParams, o.kappa,
+    ])
+
+    _warnInertFlags(o)
 
     return o
 

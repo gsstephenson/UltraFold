@@ -152,11 +152,14 @@ Common options (run `python Ultrafold.py -h` for the full list):
 | `--engine {eternafold,rnastructure}` | `eternafold` | Folding/partition engine (see above) |
 | `--DMS` | off | Input is DMS probing data (ShapeMapper 2.2 `--dms`) |
 | `--np N` | 2 | Number of parallel worker processes |
+| `--eternafoldParams PATH` | bundled path | EternaFold parameter file *(eternafold engine)* |
+| `--kappa FLOAT` | 1.0 (contrafold default) | Weight on the SHAPE/DMS evidence *(eternafold engine)* |
 | `--partitionWindowSize N` / `--partitionStepSize N` | 1200 / 100 | Partition window length / spacing |
 | `--foldWindowSize N` / `--foldStepSize N` | 3000 / 300 | Fold window length / spacing |
-| `--maxPairingDist N` | 600 | Maximum base-pairing distance *(rnastructure engine)* |
-| `--SHAPEslope` / `--SHAPEintercept` | 1.8 / -0.6 | SHAPE pseudo-free-energy params *(rnastructure engine)* |
-| `--ssRegion FILE` / `--pkRegion FILE` | — | Forced single-stranded / pseudoknot constraints *(rnastructure engine)* |
+| `--trimInterior N` | 300 | Nucleotides trimmed from partition-window interiors before merging |
+| `--maxPairingDist N` | 600 | Maximum base-pairing distance *(rnastructure engine; warns under eternafold)* |
+| `--SHAPEslope` / `--SHAPEintercept` | 1.8 / -0.6 | SHAPE pseudo-free-energy params *(rnastructure engine; warns under eternafold)* |
+| `--ssRegion FILE` / `--pkRegion FILE` | — | Forced single-stranded / pseudoknot constraints *(rnastructure engine; warns under eternafold)* |
 | `--pvclient` | off | Enable PVclient (PseudoViewer) structure drawing; needs `httplib2` + a reachable server |
 | `--noPVclient` | — | Deprecated no-op alias (PVclient is already off by default) |
 
@@ -182,8 +185,13 @@ the folding tools aren't installed. See [tests/README.md](tests/README.md).
 v2.0.0 was validated to reproduce the **v1.1.1** reference outputs within
 float-repr precision on both engines: `merged.ct` is byte-identical and
 `merged.dp` / `shannon` match to ~5×10⁻¹² (Python 3 simply prints more float
-digits). The goldens are tool-version-specific — regenerate them with
+digits). **v2.1.0 is byte-identical to v2.0.0 on default runs** (both engines).
+The goldens are tool-version-specific — regenerate them with
 `python tests/update_goldens.py` when you intentionally change behavior.
+
+Every run also writes `results/run_manifest_<name>.txt` recording the engine, the
+full parameter set, and md5 checksums of the input and the EternaFold parameter
+file — so any result traces back to exactly how it was produced.
 
 ---
 
